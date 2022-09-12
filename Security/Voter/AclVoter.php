@@ -7,7 +7,6 @@ namespace Alchemy\AclBundle\Security\Voter;
 use Alchemy\AclBundle\AclObjectInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
 use Alchemy\AclBundle\UserInterface;
-use Alchemy\RemoteAuthBundle\Model\RemoteUser;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -32,7 +31,7 @@ class AclVoter extends Voter
     protected function voteOnAttribute($attribute, $subject, TokenInterface $token)
     {
         $user = $token->getUser();
-        if ($user instanceof UserInterface || $user instanceof RemoteUser) {
+        if ($user instanceof UserInterface) {
             return $this->permissionManager->isGranted($user, $subject, $attribute);
         }
 

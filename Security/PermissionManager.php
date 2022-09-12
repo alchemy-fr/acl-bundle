@@ -12,7 +12,6 @@ use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
 use Alchemy\AclBundle\UserInterface;
-use Alchemy\RemoteAuthBundle\Model\RemoteUser;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class PermissionManager
@@ -34,7 +33,7 @@ class PermissionManager
     }
 
     /**
-     * @param UserInterface|RemoteUser $user
+     * @param UserInterface $user
      */
     public function isGranted($user, AclObjectInterface $object, int $permission): bool
     {

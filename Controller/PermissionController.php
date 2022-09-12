@@ -7,13 +7,15 @@ namespace Alchemy\AclBundle\Controller;
 use Alchemy\AclBundle\AclObjectInterface;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
-use Alchemy\RemoteAuthBundle\Repository\GroupRepositoryInterface;
-use Alchemy\RemoteAuthBundle\Repository\UserRepositoryInterface;
+use Alchemy\AclBundle\Repository\GroupRepositoryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
+use Alchemy\AclBundle\Repository\UserRepositoryInterface;
 use Alchemy\AclBundle\Security\PermissionInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
 use Alchemy\AclBundle\Serializer\AceSerializer;
 use Doctrine\ORM\EntityManagerInterface;
+use GuzzleHttp\Exception\InvalidArgumentException;
+use GuzzleHttp\Utils;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -67,11 +69,12 @@ class PermissionController extends AbstractController
     {
         $this->validateAuthorization($request);
 
-        $objectType = $request->request->get('objectType');
-        $objectId = $request->request->get('objectId');
-        $userType = $request->request->get('userType');
-        $userId = $request->request->get('userId');
-        $mask = (int) $request->request->get('mask', 0);
+        $data = $this->getRequestData($request);
+        $objectType = $data['objectType'] ?? null;
+        $objectId = $data['objectId'] ?? null;
+        $userType = $data['userType'] ?? null;
+        $userId = $data['userId'] ?? null;
+        $mask = $data['mask'] ?? 0;
 
         $objectId = !empty($objectId) ? $objectId : null;
 
@@ -125,10 +128,11 @@ class PermissionController extends AbstractController
     public function deleteAce(Request $request): Response
     {
         $this->validateAuthorization($request);
-        $objectType = $request->request->get('objectType');
-        $objectId = $request->request->get('objectId');
-        $userType = $request->request->get('userType');
-        $userId = $request->request->get('userId');
+        $data = $this->getRequestData($request);
+        $objectType = $data['objectType'] ?? null;
+        $objectId = $data['objectId'] ?? null;
+        $userType = $data['userType'] ?? null;
+        $userId = $data['userId'] ?? null;
 
         $objectId = !empty($objectId) ? $objectId : null;
 
@@ -143,7 +147,7 @@ class PermissionController extends AbstractController
     public function getUsers(Request $request, UserRepositoryInterface $repository): Response
     {
         $this->validateAuthorization();
-        $limit = $request->query->get('limit');
+        $limit = $request->query->get('limit', 30);
         $offset = $request->query->get('offset');
 
         return new JsonResponse($repository->getUsers($limit, $offset));
@@ -155,9 +159,24 @@ class PermissionController extends AbstractController
     public function getGroups(Request $request, GroupRepositoryInterface $repository): Response
     {
         $this->validateAuthorization();
-        $limit = $request->query->get('limit');
+        $limit = $request->query->get('limit', 30);
         $offset = $request->query->get('offset');
 
         return new JsonResponse($repository->getGroups($limit, $offset));
+    }
+
+    private function getRequestData(Request $request): array
+    {
+        if ('json' !== $request->getContentType() || empty($request->getContent())) {
+            return $request->request->all();
+        }
+
+        try {
+            $data = Utils::jsonDecode($request->getContent(), true);
+        } catch (InvalidArgumentException $e) {
+            throw new BadRequestHttpException('Invalid json body: '.$e->getMessage(), $e);
+        }
+
+        return is_array($data) ? $data : [];
     }
 }
