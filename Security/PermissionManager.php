@@ -10,8 +10,8 @@ use Alchemy\AclBundle\Event\AclDeleteEvent;
 use Alchemy\AclBundle\Event\AclUpsertEvent;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
+use Alchemy\AclBundle\Model\AclUserInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
-use Alchemy\AclBundle\UserInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class PermissionManager
@@ -33,7 +33,7 @@ class PermissionManager
     }
 
     /**
-     * @param UserInterface $user
+     * @param AclUserInterface $user
      */
     public function isGranted($user, AclObjectInterface $object, int $permission): bool
     {

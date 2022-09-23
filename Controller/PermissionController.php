@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Alchemy\AclBundle\Controller;
 
-use Alchemy\AclBundle\AclObjectInterface;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
-use Alchemy\AclBundle\Repository\GroupRepositoryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
-use Alchemy\AclBundle\Repository\UserRepositoryInterface;
-use Alchemy\AclBundle\Security\PermissionInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
+use Alchemy\AclBundle\Security\Voter\SetPermissionVoter;
 use Alchemy\AclBundle\Serializer\AceSerializer;
 use Doctrine\ORM\EntityManagerInterface;
 use GuzzleHttp\Exception\InvalidArgumentException;
@@ -20,7 +17,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -37,29 +33,20 @@ class PermissionController extends AbstractController
         $this->objectMapping = $objectMapping;
     }
 
-    private function validateAuthorization(?Request $request = null): void
+    private function validateAuthorization(string $attribute, Request $request): void
     {
         if ($this->isGranted('ROLE_ADMIN')) {
             return;
         }
 
-        if ($request instanceof Request) {
-            $objectType = $request->get('objectType');
-            $objectId = $request->get('objectId');
+        $objectType = $request->get('objectType');
+        $objectId = $request->get('objectId');
 
-            if ($objectType && $objectId) {
-                $object = $this->em->find($this->objectMapping->getClassName($objectType), $objectId);
+        if ($objectType && $objectId) {
+            $object = $this->em->find($this->objectMapping->getClassName($objectType), $objectId);
 
-                if (
-                    $object instanceof AclObjectInterface
-                    && $this->isGranted(PermissionInterface::OWNER, $object)
-                ) {
-                    return;
-                }
-            }
+            $this->denyAccessUnlessGranted($attribute, $object);
         }
-
-        throw new AccessDeniedHttpException();
     }
 
     /**
@@ -67,7 +54,7 @@ class PermissionController extends AbstractController
      */
     public function setAce(Request $request): Response
     {
-        $this->validateAuthorization($request);
+        $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $request);
 
         $data = $this->getRequestData($request);
         $objectType = $data['objectType'] ?? null;
@@ -92,7 +79,7 @@ class PermissionController extends AbstractController
         AceSerializer $aceSerializer
     ): Response
     {
-        $this->validateAuthorization($request);
+        $this->validateAuthorization(SetPermissionVoter::ACL_READ, $request);
 
         $params = [
             'objectType' => $request->query->get('objectType', false),
@@ -127,7 +114,7 @@ class PermissionController extends AbstractController
      */
     public function deleteAce(Request $request): Response
     {
-        $this->validateAuthorization($request);
+        $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $request);
         $data = $this->getRequestData($request);
         $objectType = $data['objectType'] ?? null;
         $objectId = $data['objectId'] ?? null;
@@ -141,30 +128,6 @@ class PermissionController extends AbstractController
         return new JsonResponse(true);
     }
 
-    /**
-     * @Route("/users", methods={"GET"}, name="users")
-     */
-    public function getUsers(Request $request, UserRepositoryInterface $repository): Response
-    {
-        $this->validateAuthorization();
-        $limit = $request->query->get('limit', 30);
-        $offset = $request->query->get('offset');
-
-        return new JsonResponse($repository->getUsers($limit, $offset));
-    }
-
-    /**
-     * @Route("/groups", methods={"GET"}, name="groups")
-     */
-    public function getGroups(Request $request, GroupRepositoryInterface $repository): Response
-    {
-        $this->validateAuthorization();
-        $limit = $request->query->get('limit', 30);
-        $offset = $request->query->get('offset');
-
-        return new JsonResponse($repository->getGroups($limit, $offset));
-    }
-
     private function getRequestData(Request $request): array
     {
         if ('json' !== $request->getContentType() || empty($request->getContent())) {
@@ -174,7 +137,7 @@ class PermissionController extends AbstractController
         try {
             $data = Utils::jsonDecode($request->getContent(), true);
         } catch (InvalidArgumentException $e) {
-            throw new BadRequestHttpException('Invalid json body: '.$e->getMessage(), $e);
+            throw new BadRequestHttpException('Invalid JSON body: '.$e->getMessage(), $e);
         }
 
         return is_array($data) ? $data : [];

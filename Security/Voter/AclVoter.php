@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Alchemy\AclBundle\Security\Voter;
 
 use Alchemy\AclBundle\AclObjectInterface;
+use Alchemy\AclBundle\Model\AclUserInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
-use Alchemy\AclBundle\UserInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -31,7 +31,7 @@ class AclVoter extends Voter
     protected function voteOnAttribute($attribute, $subject, TokenInterface $token)
     {
         $user = $token->getUser();
-        if ($user instanceof UserInterface) {
+        if ($user instanceof AclUserInterface) {
             return $this->permissionManager->isGranted($user, $subject, $attribute);
         }
 

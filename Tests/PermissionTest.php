@@ -10,7 +10,7 @@ use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
 use Alchemy\AclBundle\Security\PermissionInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
 use Alchemy\AclBundle\Tests\Mock\ObjectMock;
-use Alchemy\AclBundle\Tests\Mock\UserMock;
+use Alchemy\AclBundle\Tests\Mock\AclUserMock;
 use PHPUnit\Framework\TestCase;
 
 class PermissionTest extends TestCase
@@ -36,7 +36,7 @@ class PermissionTest extends TestCase
 
         $permissionManager = new PermissionManager($objectMapper, $permissionRepo);
 
-        $user = new UserMock('123', []);
+        $user = new AclUserMock('123', []);
         $object = new ObjectMock('42');
 
         $this->assertEquals($expectedResult, $permissionManager->isGranted($user, $object, $permissionToTest));
@@ -68,7 +68,7 @@ class PermissionTest extends TestCase
 
         $permissionManager = new PermissionManager($objectMapper, $permissionRepo);
 
-        $user = new UserMock('123', [
+        $user = new AclUserMock('123', [
             'group1',
         ]);
         $object = new ObjectMock('42');

@@ -16,3 +16,7 @@ services:
   Alchemy\AclBundle\Security\Voter\AclVoter:
     tags:
       - { name: security.voter }
+
+  Alchemy\AclBundle\Security\Voter\SetPermissionVoter:
+    tags:
+      - { name: security.voter }

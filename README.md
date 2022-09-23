@@ -2,8 +2,6 @@
 
 ## Installation
 
-
-
 ## Project configuration
 
 Add the entities you want to extend with ACL:
