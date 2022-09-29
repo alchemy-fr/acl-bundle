@@ -8,7 +8,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 class AclUpsertEvent extends Event
 {
-    const NAME = 'acl.upsert';
+    public const NAME = 'acl.upsert';
     private string $objectType;
     private ?string $objectId;
 

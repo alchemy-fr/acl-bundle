@@ -6,12 +6,14 @@ namespace Alchemy\AclBundle\Tests;
 
 use Alchemy\AclBundle\Entity\AccessControlEntry;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
+use Alchemy\AclBundle\Repository\AclUserRepositoryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
 use Alchemy\AclBundle\Security\PermissionInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
-use Alchemy\AclBundle\Tests\Mock\ObjectMock;
 use Alchemy\AclBundle\Tests\Mock\AclUserMock;
+use Alchemy\AclBundle\Tests\Mock\ObjectMock;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class PermissionTest extends TestCase
 {
@@ -34,9 +36,18 @@ class PermissionTest extends TestCase
             ->method('getAces')
             ->willReturn([$ace]);
 
-        $permissionManager = new PermissionManager($objectMapper, $permissionRepo);
+        $user = new AclUserMock('123');
 
-        $user = new AclUserMock('123', []);
+        $userRepo = $this->createMock(AclUserRepositoryInterface::class);
+        $userRepo
+            ->expects($this->once())
+            ->method('getAclGroupsId')
+            ->with($this->equalTo($user))
+            ->willReturn([]);
+
+        $eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $permissionManager = new PermissionManager($objectMapper, $permissionRepo, $eventDispatcher, $userRepo);
+
         $object = new ObjectMock('42');
 
         $this->assertEquals($expectedResult, $permissionManager->isGranted($user, $object, $permissionToTest));
@@ -57,6 +68,7 @@ class PermissionTest extends TestCase
             ->willReturn('pub');
 
         $permissionRepo = $this->createMock(PermissionRepositoryInterface::class);
+        $eventDispatcher = $this->createMock(EventDispatcherInterface::class);
         $permissionRepo
             ->expects($this->once())
             ->method('getAces')
@@ -66,11 +78,19 @@ class PermissionTest extends TestCase
                 $ace,
             ]);
 
-        $permissionManager = new PermissionManager($objectMapper, $permissionRepo);
+        $user = new AclUserMock('123');
 
-        $user = new AclUserMock('123', [
-            'group1',
-        ]);
+        $userRepo = $this->createMock(AclUserRepositoryInterface::class);
+        $userRepo
+            ->expects($this->once())
+            ->method('getAclGroupsId')
+            ->with($this->equalTo($user))
+            ->willReturn([
+                'group1',
+            ]);
+
+        $permissionManager = new PermissionManager($objectMapper, $permissionRepo, $eventDispatcher, $userRepo);
+
         $object = new ObjectMock('42');
 
         $this->assertEquals($expectedResult, $permissionManager->isGranted($user, $object, $permissionToTest));

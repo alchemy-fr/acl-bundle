@@ -14,6 +14,14 @@ alchemy_acl:
     asset: App\Entity\Asset
 ```
 
+Then you must alias your UserRepository service:
+
+```yaml
+# config/services.yaml
+services:
+    Alchemy\AclBundle\Repository\AclUserRepositoryInterface: '@App\Repository\UserRepository'
+```
+
 ### Admin setup (with Easy admin ^2.0)
 
 ```php

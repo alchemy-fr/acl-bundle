@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Alchemy\AclBundle\Tests\Mock;
 
-use Alchemy\AclBundle\UserInterface;
+use Alchemy\AclBundle\Model\AclUserInterface;
 
-class UserMock implements UserInterface
+class UserMock implements AclUserInterface
 {
     private string $id;
     private array $groupIds;

@@ -24,15 +24,15 @@ class SetPermissionVoter extends Voter
     protected function supports($attribute, $subject)
     {
         return in_array(
-                $attribute, [
-                    self::ACL_READ,
-                    self::ACL_WRITE,
-                ]
-            ) && $subject instanceof AclObjectInterface;
+            $attribute, [
+                self::ACL_READ,
+                self::ACL_WRITE,
+            ]
+        ) && $subject instanceof AclObjectInterface;
     }
 
     /**
-     * @param string $attribute
+     * @param string             $attribute
      * @param AclObjectInterface $subject
      */
     protected function voteOnAttribute($attribute, $subject, TokenInterface $token)

@@ -6,14 +6,14 @@ namespace Alchemy\AclBundle\Model;
 
 interface AccessControlEntryInterface
 {
-    const USER_WILDCARD = '__ALL_USERS__';
+    public const USER_WILDCARD = '__ALL_USERS__';
 
-    const TYPE_USER_VALUE = 0;
-    const TYPE_GROUP_VALUE = 1;
-    const TYPE_USER = 'user';
-    const TYPE_GROUP = 'group';
+    public const TYPE_USER_VALUE = 0;
+    public const TYPE_GROUP_VALUE = 1;
+    public const TYPE_USER = 'user';
+    public const TYPE_GROUP = 'group';
 
-    const USER_TYPES = [
+    public const USER_TYPES = [
         self::TYPE_USER => self::TYPE_USER_VALUE,
         self::TYPE_GROUP => self::TYPE_GROUP_VALUE,
     ];

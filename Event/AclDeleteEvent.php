@@ -8,7 +8,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 class AclDeleteEvent extends Event
 {
-    const NAME = 'acl.delete';
+    public const NAME = 'acl.delete';
     private string $objectType;
     private ?string $objectId;
 

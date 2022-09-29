@@ -77,8 +77,7 @@ class PermissionController extends AbstractController
         Request $request,
         PermissionRepositoryInterface $repository,
         AceSerializer $aceSerializer
-    ): Response
-    {
+    ): Response {
         $this->validateAuthorization(SetPermissionVoter::ACL_READ, $request);
 
         $params = [
@@ -92,7 +91,7 @@ class PermissionController extends AbstractController
             return false !== $entry;
         });
         $params = array_map(function ($p): ?string {
-            return '' === $p || 'null' === $p ? null: $p;
+            return '' === $p || 'null' === $p ? null : $p;
         }, $params);
 
         if (!empty($params['userType'])) {

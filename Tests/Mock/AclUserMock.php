@@ -9,21 +9,14 @@ use Alchemy\AclBundle\Model\AclUserInterface;
 class AclUserMock implements AclUserInterface
 {
     private string $id;
-    private array $groupIds;
 
-    public function __construct(string $id, array $groupIds)
+    public function __construct(string $id)
     {
         $this->id = $id;
-        $this->groupIds = $groupIds;
     }
 
     public function getId(): string
     {
         return $this->id;
-    }
-
-    public function getGroupIds(): array
-    {
-        return $this->groupIds;
     }
 }

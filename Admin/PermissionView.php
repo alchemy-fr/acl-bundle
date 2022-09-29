@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Alchemy\AclBundle\Admin;
 
-use Alchemy\AclBundle\Entity\AccessControlEntry;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
+use Alchemy\AclBundle\Model\AccessControlEntryInterface;
+use Alchemy\AclBundle\Repository\AclUserRepositoryInterface;
 use Alchemy\AclBundle\Repository\GroupRepositoryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
-use Alchemy\AclBundle\Repository\UserRepositoryInterface;
 use Alchemy\AclBundle\Security\PermissionInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -16,14 +16,14 @@ class PermissionView
 {
     private ObjectMapping $objectMapping;
     private PermissionRepositoryInterface $repository;
-    private UserRepositoryInterface $userRepository;
+    private AclUserRepositoryInterface $userRepository;
     private GroupRepositoryInterface $groupRepository;
     private EntityManagerInterface $em;
 
     public function __construct(
         ObjectMapping $objectMapping,
         PermissionRepositoryInterface $repository,
-        UserRepositoryInterface $userRepository,
+        AclUserRepositoryInterface $userRepository,
         GroupRepositoryInterface $groupRepository,
         EntityManagerInterface $em
     ) {
@@ -49,9 +49,9 @@ class PermissionView
         $aces = array_merge($aces, $this->repository->getObjectAces($objectKey, $id));
 
         $users = [
-            AccessControlEntry::USER_WILDCARD => 'All users',
+            AccessControlEntryInterface::USER_WILDCARD => 'All users',
         ];
-        foreach ($this->userRepository->getUsers() as $user) {
+        foreach ($this->userRepository->getAclUsers() as $user) {
             $users[$user['id']] = $user['username'];
         }
         $groups = [];
@@ -59,23 +59,23 @@ class PermissionView
             $groups[$group['id']] = $group['name'];
         }
 
-        $aces = array_map(function (AccessControlEntry $ace) use ($users, $groups, $permissions): array {
+        $aces = array_map(function (AccessControlEntryInterface $ace) use ($users, $groups, $permissions): array {
             $name = $ace->getUserId();
             switch ($ace->getUserType()) {
-                case AccessControlEntry::TYPE_USER_VALUE:
-                    $name = $ace->getUserId() ? ($users[$ace->getUserId()] ?? $name) : AccessControlEntry::USER_WILDCARD;
+                case AccessControlEntryInterface::TYPE_USER_VALUE:
+                    $name = $ace->getUserId() ? ($users[$ace->getUserId()] ?? $name) : AccessControlEntryInterface::USER_WILDCARD;
                     break;
-                case AccessControlEntry::TYPE_GROUP_VALUE:
+                case AccessControlEntryInterface::TYPE_GROUP_VALUE:
                     $name = $groups[$ace->getUserId()] ?? $name;
                     break;
             }
 
             return [
                 'userType' => $ace->getUserTypeString(),
-                'userId' => $ace->getUserId() ?? AccessControlEntry::USER_WILDCARD,
+                'userId' => $ace->getUserId() ?? AccessControlEntryInterface::USER_WILDCARD,
                 'name' => $name,
                 'objectId' => $ace->getObjectId(),
-                'permissions' => array_map(fn(int $p): bool => $ace->hasPermission($p), $permissions),
+                'permissions' => array_map(fn (int $p): bool => $ace->hasPermission($p), $permissions),
             ];
         }, $aces);
 
@@ -83,12 +83,12 @@ class PermissionView
         if ($id) {
             $object = $this->em->getRepository($this->objectMapping->getClassName($objectKey))->find($id);
             if (null !== $object && method_exists($object, '__toString')) {
-                $objectTitle = (string)$object;
+                $objectTitle = (string) $object;
             }
         }
 
         $params = [
-            'USER_WILDCARD' => AccessControlEntry::USER_WILDCARD,
+            'USER_WILDCARD' => AccessControlEntryInterface::USER_WILDCARD,
             'permissions' => $permissions,
             'aces' => $aces,
             'users' => $users,

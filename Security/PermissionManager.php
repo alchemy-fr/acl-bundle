@@ -11,6 +11,7 @@ use Alchemy\AclBundle\Event\AclUpsertEvent;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
 use Alchemy\AclBundle\Model\AclUserInterface;
+use Alchemy\AclBundle\Repository\AclUserRepositoryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -19,23 +20,22 @@ class PermissionManager
     private ObjectMapping $objectMapper;
     private PermissionRepositoryInterface $repository;
     private EventDispatcherInterface $eventDispatcher;
+    private AclUserRepositoryInterface $userRepository;
     private array $cache = [];
 
     public function __construct(
         ObjectMapping $objectMapper,
         PermissionRepositoryInterface $repository,
-        EventDispatcherInterface $eventDispatcher
-    )
-    {
+        EventDispatcherInterface $eventDispatcher,
+        AclUserRepositoryInterface $userRepository
+    ) {
         $this->objectMapper = $objectMapper;
         $this->repository = $repository;
         $this->eventDispatcher = $eventDispatcher;
+        $this->userRepository = $userRepository;
     }
 
-    /**
-     * @param AclUserInterface $user
-     */
-    public function isGranted($user, AclObjectInterface $object, int $permission): bool
+    public function isGranted(AclUserInterface $user, AclObjectInterface $object, int $permission): bool
     {
         if ($object->getAclOwnerId() === $user->getId()) {
             return true;
@@ -52,7 +52,7 @@ class PermissionManager
         return false;
     }
 
-    private function getAces($user, AclObjectInterface $object): array
+    private function getAces(AclUserInterface $user, AclObjectInterface $object): array
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
         $key = sprintf('%s:%s:%s', $user->getId(), $objectKey, $object->getId());
@@ -60,10 +60,12 @@ class PermissionManager
             return $this->cache[$key];
         }
 
+        $groupsId = $this->userRepository->getAclGroupsId($user);
+
         /** @var AccessControlEntry[] $aces */
         $aces = $this->repository->getAces(
             $user->getId(),
-            $user->getGroupIds(),
+            $groupsId,
             $objectKey,
             $object->getId()
         );

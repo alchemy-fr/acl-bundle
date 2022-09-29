@@ -6,17 +6,17 @@ namespace Alchemy\AclBundle\Security;
 
 interface PermissionInterface
 {
-    const VIEW = 1;
-    const CREATE = 2;
-    const EDIT = 4;
-    const DELETE = 8;
-    const UNDELETE = 16;
-    const OPERATOR = 32;
-    const MASTER = 64;
-    const OWNER = 128;
-    const SHARE = 256;
+    public const VIEW = 1;
+    public const CREATE = 2;
+    public const EDIT = 4;
+    public const DELETE = 8;
+    public const UNDELETE = 16;
+    public const OPERATOR = 32;
+    public const MASTER = 64;
+    public const OWNER = 128;
+    public const SHARE = 256;
 
-    const PERMISSIONS = [
+    public const PERMISSIONS = [
         'VIEW' => self::VIEW,
         'CREATE' => self::CREATE,
         'EDIT' => self::EDIT,
