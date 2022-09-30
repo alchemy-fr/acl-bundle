@@ -14,7 +14,7 @@ class SetPermissionVoter extends Voter
 {
     public const ACL_READ = 'ACL_READ';
     public const ACL_WRITE = 'ACL_WRITE';
-    private Security $security;
+    protected Security $security;
 
     public function __construct(Security $security)
     {
