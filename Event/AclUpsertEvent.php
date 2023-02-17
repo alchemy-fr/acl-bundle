@@ -4,37 +4,20 @@ declare(strict_types=1);
 
 namespace Alchemy\AclBundle\Event;
 
-use Symfony\Contracts\EventDispatcher\Event;
-
-class AclUpsertEvent extends Event
+class AclUpsertEvent extends AclEvent
 {
     public const NAME = 'acl.upsert';
-    private string $objectType;
-    private ?string $objectId;
 
-    public function __construct(string $objectType, ?string $objectId)
+    private int $permissions;
+
+    public function __construct(int $userType, ?string $userId, string $objectType, ?string $objectId, int $permissions)
     {
-        $this->objectType = $objectType;
-        $this->objectId = $objectId;
+        $this->permissions = $permissions;
+        parent::__construct($userType, $userId, $objectType, $objectId);
     }
 
-    public function getObjectType(): string
+    public function getPermissions(): int
     {
-        return $this->objectType;
-    }
-
-    public function setObjectType(string $objectType): void
-    {
-        $this->objectType = $objectType;
-    }
-
-    public function getObjectId(): ?string
-    {
-        return $this->objectId;
-    }
-
-    public function setObjectId(?string $objectId): void
-    {
-        $this->objectId = $objectId;
+        return $this->permissions;
     }
 }

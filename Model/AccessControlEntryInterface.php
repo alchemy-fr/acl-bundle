@@ -40,6 +40,8 @@ interface AccessControlEntryInterface
 
     public function setMask(int $mask): void;
 
+    public function hasPermission(int $permission): bool;
+
     public function setPermissions(array $permissions): void;
 
     public function getPermissions(): array;

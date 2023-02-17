@@ -102,7 +102,7 @@ class PermissionManager
         $objectKey = $this->objectMapper->getObjectKey($object);
 
         $this->updateOrCreateAce(
-            AccessControlEntryInterface::TYPE_USER,
+            AccessControlEntryInterface::TYPE_USER_VALUE,
             $userId,
             $objectKey,
             $object->getId(),
@@ -115,7 +115,7 @@ class PermissionManager
         $objectKey = $this->objectMapper->getObjectKey($object);
 
         $this->updateOrCreateAce(
-            AccessControlEntryInterface::TYPE_GROUP,
+            AccessControlEntryInterface::TYPE_GROUP_VALUE,
             $userId,
             $objectKey,
             $object->getId(),
@@ -123,22 +123,33 @@ class PermissionManager
         );
     }
 
-    public function updateOrCreateAce(string $userType, string $userId, string $objectType, ?string $objectId, int $permissions): ?AccessControlEntryInterface
+    public function findAce(
+        int $userType,
+        ?string $userId,
+        string $objectType,
+        string $objectId
+    ): ?AccessControlEntryInterface
+    {
+        return $this->repository->findAce($userType, $userId, $objectType, $objectId);
+    }
+
+    public function updateOrCreateAce(int $userType, string $userId, string $objectType, ?string $objectId, int $permissions, bool $append = false): ?AccessControlEntryInterface
     {
         $ace = $this->repository->updateOrCreateAce(
             $userType,
             $userId,
             $objectType,
             $objectId,
-            $permissions
+            $permissions,
+            $append
         );
 
-        $this->eventDispatcher->dispatch(new AclUpsertEvent($objectType, $objectId), AclUpsertEvent::NAME);
+        $this->eventDispatcher->dispatch(new AclUpsertEvent($userType, $userId, $objectType, $objectId, $permissions), AclUpsertEvent::NAME);
 
         return $ace;
     }
 
-    public function deleteAce(string $userType, string $userId, string $objectType, ?string $objectId): void
+    public function deleteAce(int $userType, string $userId, string $objectType, ?string $objectId): void
     {
         if ($this->repository->deleteAce(
             $userType,
@@ -146,7 +157,7 @@ class PermissionManager
             $objectType,
             $objectId
         )) {
-            $this->eventDispatcher->dispatch(new AclDeleteEvent($objectType, $objectId), AclDeleteEvent::NAME);
+            $this->eventDispatcher->dispatch(new AclDeleteEvent($userType, $userId, $objectType, $objectId), AclDeleteEvent::NAME);
         }
     }
 }

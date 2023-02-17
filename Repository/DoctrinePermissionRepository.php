@@ -57,22 +57,39 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
             ->getAllowedGroupIds($objectType, $objectId, $permission);
     }
 
-    public function updateOrCreateAce(string $userType, ?string $userId, string $objectType, ?string $objectId, int $mask): ?AccessControlEntryInterface
+    public function findAce(
+        int $userType,
+        ?string $userId,
+        string $objectType,
+        string $objectId
+    ): ?AccessControlEntryInterface
     {
         if (null !== $objectId && empty($objectId)) {
             throw new InvalidArgumentException('Empty objectId');
         }
 
         $userId = AccessControlEntry::USER_WILDCARD === $userId ? null : $userId;
-        $userType = AccessControlEntry::getUserTypeFromString($userType);
 
-        $ace = $this->em->getRepository(AccessControlEntry::class)
+        return $this->em->getRepository(AccessControlEntry::class)
             ->findOneBy([
                 'objectType' => $objectType,
                 'objectId' => $objectId,
                 'userType' => $userType,
                 'userId' => $userId,
             ]);
+
+    }
+
+    public function updateOrCreateAce(
+        int $userType,
+        ?string $userId,
+        string $objectType,
+        ?string $objectId,
+        int $mask,
+        bool $append = false
+    ): AccessControlEntryInterface
+    {
+        $ace = $this->findAce($userType, $userId, $objectType, $objectId);
 
         if (!$ace instanceof AccessControlEntry) {
             $ace = new AccessControlEntry();
@@ -82,7 +99,11 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
             $ace->setObjectId($objectId);
         }
 
-        $ace->setMask($mask);
+        if ($append) {
+            $ace->addPermission($mask);
+        } else {
+            $ace->setMask($mask);
+        }
 
         $this->em->persist($ace);
         $this->em->flush();
@@ -90,10 +111,9 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         return $ace;
     }
 
-    public function deleteAce(string $userType, ?string $userId, string $objectType, ?string $objectId): bool
+    public function deleteAce(int $userType, ?string $userId, string $objectType, ?string $objectId): bool
     {
-        $userId = AccessControlEntry::USER_WILDCARD === $userId ? null : $userId;
-        $userType = AccessControlEntry::getUserTypeFromString($userType);
+        $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
 
         $ace = $this->em->getRepository(AccessControlEntry::class)
             ->findOneBy([

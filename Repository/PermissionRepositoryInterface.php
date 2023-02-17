@@ -24,10 +24,24 @@ interface PermissionRepositoryInterface
      */
     public function getObjectAces(string $objectType, ?string $objectId): array;
 
-    public function updateOrCreateAce(string $userType, string $userId, string $objectType, ?string $objectId, int $permissions): ?AccessControlEntryInterface;
+    public function findAce(
+        int $userType,
+        ?string $userId,
+        string $objectType,
+        string $objectId
+    ): ?AccessControlEntryInterface;
+
+    public function updateOrCreateAce(
+        int $userType,
+        string $userId,
+        string $objectType,
+        ?string $objectId,
+        int $mask,
+        bool $append = false
+    ): AccessControlEntryInterface;
 
     /**
      * @return bool Whether the ACE has been deleted
      */
-    public function deleteAce(string $userType, string $userId, string $objectType, ?string $objectId): bool;
+    public function deleteAce(int $userType, string $userId, string $objectType, ?string $objectId): bool;
 }

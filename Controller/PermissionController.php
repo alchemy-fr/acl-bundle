@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alchemy\AclBundle\Controller;
 
+use Alchemy\AclBundle\Entity\AccessControlEntry;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
@@ -65,6 +66,8 @@ class PermissionController extends AbstractController
 
         $objectId = !empty($objectId) ? $objectId : null;
 
+        $userType = AccessControlEntry::getUserTypeFromString($userType);
+
         $this->permissionManager->updateOrCreateAce($userType, $userId, $objectType, $objectId, $mask);
 
         return new JsonResponse(true);
@@ -121,6 +124,8 @@ class PermissionController extends AbstractController
         $userId = $data['userId'] ?? null;
 
         $objectId = !empty($objectId) ? $objectId : null;
+
+        $userType = AccessControlEntry::getUserTypeFromString($userType);
 
         $this->permissionManager->deleteAce($userType, $userId, $objectType, $objectId);
 
