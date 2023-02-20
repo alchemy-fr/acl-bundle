@@ -12,8 +12,6 @@ use Alchemy\AclBundle\Security\PermissionManager;
 use Alchemy\AclBundle\Security\Voter\SetPermissionVoter;
 use Alchemy\AclBundle\Serializer\AceSerializer;
 use Doctrine\ORM\EntityManagerInterface;
-use GuzzleHttp\Exception\InvalidArgumentException;
-use GuzzleHttp\Utils;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -139,8 +137,8 @@ class PermissionController extends AbstractController
         }
 
         try {
-            $data = Utils::jsonDecode($request->getContent(), true);
-        } catch (InvalidArgumentException $e) {
+            $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
             throw new BadRequestHttpException('Invalid JSON body: '.$e->getMessage(), $e);
         }
 
