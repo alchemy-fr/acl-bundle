@@ -61,14 +61,14 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         int $userType,
         ?string $userId,
         string $objectType,
-        string $objectId
+        ?string $objectId
     ): ?AccessControlEntryInterface
     {
         if (null !== $objectId && empty($objectId)) {
             throw new InvalidArgumentException('Empty objectId');
         }
 
-        $userId = AccessControlEntry::USER_WILDCARD === $userId ? null : $userId;
+        $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
 
         return $this->em->getRepository(AccessControlEntry::class)
             ->findOneBy([
