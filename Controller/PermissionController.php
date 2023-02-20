@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alchemy\AclBundle\Controller;
 
+use Alchemy\AclBundle\AclObjectInterface;
 use Alchemy\AclBundle\Entity\AccessControlEntry;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
@@ -16,6 +17,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -32,20 +34,29 @@ class PermissionController extends AbstractController
         $this->objectMapping = $objectMapping;
     }
 
-    private function validateAuthorization(string $attribute, Request $request): void
+    private function validateAuthorization(string $attribute, ?Request $request = null): void
     {
         if ($this->isGranted('ROLE_ADMIN')) {
             return;
         }
 
-        $objectType = $request->get('objectType');
-        $objectId = $request->get('objectId');
+        if ($request instanceof Request) {
+            $objectType = $request->get('objectType');
+            $objectId = $request->get('objectId');
 
-        if ($objectType && $objectId) {
-            $object = $this->em->find($this->objectMapping->getClassName($objectType), $objectId);
+            if ($objectType && $objectId) {
+                $object = $this->em->find($this->objectMapping->getClassName($objectType), $objectId);
 
-            $this->denyAccessUnlessGranted($attribute, $object);
+                if (
+                    $object instanceof AclObjectInterface
+                    && $this->isGranted($attribute, $object)
+                ) {
+                    return;
+                }
+            }
         }
+
+        throw new AccessDeniedHttpException();
     }
 
     /**
@@ -60,7 +71,7 @@ class PermissionController extends AbstractController
         $objectId = $data['objectId'] ?? null;
         $userType = $data['userType'] ?? null;
         $userId = $data['userId'] ?? null;
-        $mask = $data['mask'] ?? 0;
+        $mask = (int) ($data['mask'] ?? 0);
 
         $objectId = !empty($objectId) ? $objectId : null;
 

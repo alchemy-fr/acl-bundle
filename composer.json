@@ -8,11 +8,12 @@
   "require": {
     "php": "^7.4 || ^8.0",
     "ext-json": "*",
+    "doctrine/orm": "^2.6",
+    "ramsey/uuid-doctrine": "^1.5",
+    "symfony/event-dispatcher": "^4.0||^5",
     "symfony/framework-bundle": "^4.0||^5",
     "symfony/security-bundle": "^4.0||^5",
-    "symfony/event-dispatcher": "^4.0||^5",
-    "ramsey/uuid-doctrine": "^1.5",
-    "doctrine/orm": "^2.6"
+    "symfony/yaml": "^6.2"
   },
   "config": {
     "sort-packages": true

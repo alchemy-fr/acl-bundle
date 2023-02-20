@@ -18,7 +18,8 @@ class AccessControlEntryRepository extends EntityRepository
         string $objectTableAlias,
         int $permission,
         bool $inner = true
-    ): void {
+    ): void
+    {
         $hasGroups = !empty($groupIds);
 
         $method = $inner ? 'innerJoin' : 'leftJoin';

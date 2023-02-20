@@ -30,14 +30,13 @@ class AlchemyAclExtension extends Extension implements PrependExtensionInterface
 
         $mapperDef = $container->findDefinition(ObjectMapping::class);
         $mapperDef->setArgument('$mapping', $config['objects']);
+
+        $container->setParameter('alchemy_acl.enabled_permissions', !empty($config['enabled_permissions']) ? $config['enabled_permissions'] : null);
     }
 
     public function prepend(ContainerBuilder $container)
     {
         $bundles = $container->getParameter('kernel.bundles');
-
-        $configs = $container->getExtensionConfig($this->getAlias());
-        $config = $this->processConfiguration(new Configuration(), $configs);
 
         if (isset($bundles['EasyAdminBundle'])) {
             $data = (new Parser())->parse(file_get_contents(__DIR__.'/../Resources/config/easy_admin_entities.yaml'));

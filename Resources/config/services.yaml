@@ -6,12 +6,14 @@ services:
   Alchemy\AclBundle\Repository\DoctrinePermissionRepository: ~
   Alchemy\AclBundle\Security\PermissionManager: ~
   Alchemy\AclBundle\Mapping\ObjectMapping: ~
-  Alchemy\AclBundle\Admin\PermissionView: ~
+  Alchemy\AclBundle\Admin\PermissionView:
+    arguments:
+      $enabledPermissions: '%alchemy_acl.enabled_permissions%'
   Alchemy\AclBundle\Form\ObjectTypeFormType: ~
   Alchemy\AclBundle\Serializer\AceSerializer: ~
   Alchemy\AclBundle\Controller\PermissionController: ~
 
-  Alchemy\AclBundle\Repository\PermissionRepositoryInterface: "@Alchemy\\AclBundle\\Repository\\DoctrinePermissionRepository"
+  Alchemy\AclBundle\Repository\PermissionRepositoryInterface: '@Alchemy\AclBundle\Repository\DoctrinePermissionRepository'
 
   Alchemy\AclBundle\Security\Voter\AclVoter:
     tags:
