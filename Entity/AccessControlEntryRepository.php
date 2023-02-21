@@ -17,7 +17,8 @@ class AccessControlEntryRepository extends EntityRepository
         string $objectType,
         string $objectTableAlias,
         int $permission,
-        bool $inner = true
+        bool $inner = true,
+        string $aceAlias = 'ace'
     ): void
     {
         $hasGroups = !empty($groupIds);
@@ -27,13 +28,14 @@ class AccessControlEntryRepository extends EntityRepository
         $queryBuilder
             ->$method(
                 AccessControlEntry::class,
-                'ace',
+                $aceAlias,
                 Join::WITH,
                 sprintf(
-                    'ace.objectType = :ot AND (ace.objectId = %s.id OR ace.objectId IS NULL) AND BIT_AND(ace.mask, :perm) = :perm'
-                    .' AND (ace.userId IS NULL OR (ace.userType = :uty AND ace.userId = :uid)'
-                    .($hasGroups ? ' OR (ace.userType = :gty AND ace.userId IN (:gids))' : '')
-                    .')',
+                    '%1$s.objectType = :ot AND (%1$s.objectId = %2$s.id OR %1$s.objectId IS NULL) AND BIT_AND(%1$s.mask, :perm) = :perm'
+                        .' AND (%1$s.userId IS NULL OR (%1$s.userType = :uty AND %1$s.userId = :uid)'
+                        .($hasGroups ? ' OR (%1$s.userType = :gty AND %1$s.userId IN (:gids))' : '')
+                        .')',
+                    $aceAlias,
                     $objectTableAlias
                 )
             )
