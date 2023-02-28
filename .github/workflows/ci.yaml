@@ -7,14 +7,20 @@ on:
     branches: [ "main" ]
 
 jobs:
-  setup:
-    name: 'Setup stack'
+  test:
+    name: 'Tests'
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        version:
+        - 7.4
+        - 8.0
+        - 8.1
+        - 8.2
     steps:
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: ${{ matrix.version }}
       - uses: actions/checkout@v3
       - name: Cache Composer packages
         id: composer-cache
