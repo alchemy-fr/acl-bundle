@@ -37,11 +37,6 @@ class PermissionView
         $this->enabledPermissions = $enabledPermissions;
     }
 
-    public function getObjectKey(string $entityClass): string
-    {
-        return $this->objectMapping->getObjectKey($entityClass);
-    }
-
     public function getViewParameters(string $objectKey, ?string $id): array
     {
         $permissions = [];

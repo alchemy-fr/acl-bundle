@@ -22,43 +22,6 @@ services:
     Alchemy\AclBundle\Repository\AclUserRepositoryInterface: '@App\Repository\UserRepository'
 ```
 
-### Admin setup (with Easy admin ^2.0)
-
-```php
-<?php
-// 
-declare(strict_types=1);
-
-namespace App\Admin;
-
-use Alchemy\AclBundle\Admin\PermissionTrait;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\EasyAdminController;
-
-class AdminController extends EasyAdminController
-{
-    use PermissionTrait;
-}
-```
-
-```yaml
-# config/routes/admin.yaml
-easy_admin_bundle:
-    resource: 'App\Admin\AdminController'
-    prefix: /admin
-    type: annotation
-
-```
-
-```yaml
-# config/routes/alchemy_acl.yaml
-alchemy_acl_api:
-  resource: "@AlchemyAclBundle/Resources/routing/permissions_api.yaml"
-  prefix: /permissions
-alchemy_acl_admin:
-  resource: "@AlchemyAclBundle/Resources/routing/permissions_admin.yaml"
-  prefix: /admin/permissions
-```
-
 Add redis cache for access token:
 ```yaml
 # config/packages/cache.yaml

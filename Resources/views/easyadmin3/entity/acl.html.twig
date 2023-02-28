@@ -1,7 +1,7 @@
 {% extends '@EasyAdmin/page/content.html.twig' %}
 {% set _request_parameters = app.request.query.all %}
 
-{% block head_custom_stylesheets %}
+{% block head_stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <style>
@@ -16,12 +16,12 @@
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
     <script>
-        {% include '@AlchemyAcl/permissions/permissions.js.twig' %}
+        {% include '@AlchemyAcl/easyadmin3/permissions.js.twig' %}
     </script>
 {% endblock %}
 
 {% block content_title %}
-    <a href="{{ path('easyadmin', _request_parameters|merge({ action: 'list' })) }}">Back</a>
+    <a href="{{ back_url }}">Back</a>
     |
     Manage permissions for <b>{{ object_type }} {{ object_title }}</b> #{{ object_id }}
 {% endblock %}
@@ -127,7 +127,8 @@
                             class="delete btn btn-danger"
                     >Delete</button>
                     {% if is_global %}
-                        <a href="{{ path('alchemy_admin_acl_global_permissions', {type: object_type}) }}" class="btn btn-info">
+                        {% set url = ea_url().setRoute('alchemy_admin_acl_global_permissions').set('routeParams', {type: object_type, user_id: ace.userId}).generateUrl() %}
+                        <a href="{{ url }}" class="btn btn-info">
                             Edit global permissions
                         </a>
                     {% endif %}
