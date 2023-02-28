@@ -92,6 +92,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         $ace = $this->findAce($userType, $userId, $objectType, $objectId);
 
         if (!$ace instanceof AccessControlEntry) {
+            $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
             $ace = new AccessControlEntry();
             $ace->setUserType($userType);
             $ace->setUserId($userId);
