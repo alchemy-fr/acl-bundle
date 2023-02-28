@@ -21,6 +21,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.version }}
+          extensions: xml, json
       - uses: actions/checkout@v3
       - name: Cache Composer packages
         id: composer-cache
@@ -29,7 +30,7 @@ jobs:
           path: vendor
           key: ${{ runner.os }}-php-${{ matrix.version }}-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
-            ${{ runner.os }}-php-
+            ${{ runner.os }}-php-${{ matrix.version }}-
       - name: Install Dependencies
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
       - name: PHPUnit
