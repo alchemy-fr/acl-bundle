@@ -21,7 +21,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.version }}
-          extensions: xml, json
+          extensions: xml, json, mbstring
       - uses: actions/checkout@v3
       - name: Cache Composer packages
         id: composer-cache
