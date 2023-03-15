@@ -34,25 +34,21 @@ class PermissionController extends AbstractController
         $this->objectMapping = $objectMapping;
     }
 
-    private function validateAuthorization(string $attribute, ?Request $request = null): void
+    private function validateAuthorization(string $attribute, Request $request): array
     {
+        $data = $this->getRequestData($request);
         if ($this->isGranted('ROLE_ADMIN')) {
-            return;
+            return $data;
         }
 
-        if ($request instanceof Request) {
-            $objectType = $request->get('objectType');
-            $objectId = $request->get('objectId');
+        if (!empty($data['objectType']) && !empty($data['objectId'])) {
+            $object = $this->em->find($this->objectMapping->getClassName($data['objectType']), $data['objectId']);
 
-            if ($objectType && $objectId) {
-                $object = $this->em->find($this->objectMapping->getClassName($objectType), $objectId);
-
-                if (
-                    $object instanceof AclObjectInterface
-                    && $this->isGranted($attribute, $object)
-                ) {
-                    return;
-                }
+            if (
+                $object instanceof AclObjectInterface
+                && $this->isGranted($attribute, $object)
+            ) {
+                return $data;
             }
         }
 
@@ -64,9 +60,8 @@ class PermissionController extends AbstractController
      */
     public function setAce(Request $request): Response
     {
-        $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $request);
+        $data = $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $request);
 
-        $data = $this->getRequestData($request);
         $objectType = $data['objectType'] ?? null;
         $objectId = $data['objectId'] ?? null;
         $userType = $data['userType'] ?? null;
@@ -125,8 +120,7 @@ class PermissionController extends AbstractController
      */
     public function deleteAce(Request $request): Response
     {
-        $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $request);
-        $data = $this->getRequestData($request);
+        $data = $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $request);
         $objectType = $data['objectType'] ?? null;
         $objectId = $data['objectId'] ?? null;
         $userType = $data['userType'] ?? null;
@@ -144,6 +138,10 @@ class PermissionController extends AbstractController
     private function getRequestData(Request $request): array
     {
         if ('json' !== $request->getContentType() || empty($request->getContent())) {
+            if ('GET' === $request->getMethod()) {
+                return $request->query->all();
+            }
+
             return $request->request->all();
         }
 
