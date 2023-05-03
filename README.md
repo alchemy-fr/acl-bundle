@@ -67,13 +67,6 @@ If the value is NULL, then the ACE is apply to all objects of this `objectType`.
 
 This bundle exposes the following routes to the application:
 
-- `GET /permissions/users` Get all users
-
------
-
-- `GET /permissions/groups` Get all groups
-
------
 - `GET /permissions/aces` Get access control entries (ACEs)
 Available query filters:
 - `userType` (`user` or `group`)
