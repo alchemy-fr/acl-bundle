@@ -96,7 +96,7 @@ class PermissionTest extends TestCase
         $this->assertEquals($expectedResult, $permissionManager->isGranted($user, $object, $permissionToTest));
     }
 
-    public function permissionProvider(): array
+    public static function permissionProvider(): array
     {
         return [
             [[], PermissionInterface::VIEW, false],
