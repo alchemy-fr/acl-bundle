@@ -12,27 +12,20 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 class AclVoter extends Voter
 {
-    private PermissionManager $permissionManager;
-
-    public function __construct(PermissionManager $permissionManager)
+    public function __construct(private readonly PermissionManager $permissionManager)
     {
-        $this->permissionManager = $permissionManager;
     }
 
-    protected function supports($attribute, $subject)
+    protected function supports(string $attribute, mixed $subject): bool
     {
-        return is_int($attribute) && $subject instanceof AclObjectInterface;
+        return is_numeric($attribute) && $subject instanceof AclObjectInterface;
     }
 
-    /**
-     * @param int                $attribute
-     * @param AclObjectInterface $subject
-     */
-    protected function voteOnAttribute($attribute, $subject, TokenInterface $token)
+    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
         $user = $token->getUser();
         if ($user instanceof AclUserInterface) {
-            return $this->permissionManager->isGranted($user, $subject, $attribute);
+            return $this->permissionManager->isGranted($user, $subject, (int) $attribute);
         }
 
         return false;

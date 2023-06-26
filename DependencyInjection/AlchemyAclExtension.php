@@ -17,9 +17,6 @@ use Symfony\Component\Yaml\Parser;
  */
 class AlchemyAclExtension extends Extension implements PrependExtensionInterface
 {
-    /**
-     * {@inheritdoc}
-     */
     public function load(array $configs, ContainerBuilder $container)
     {
         $configuration = new Configuration();

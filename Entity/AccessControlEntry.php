@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Alchemy\AclBundle\Entity;
 
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
-use DateTime;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Uuid;
 
@@ -63,12 +62,12 @@ class AccessControlEntry implements AccessControlEntryInterface
     /**
      * @ORM\Column(type="datetime")
      */
-    private DateTime $createdAt;
+    private \DateTime $createdAt;
 
     public function __construct()
     {
         $this->id = Uuid::uuid4();
-        $this->createdAt = new DateTime();
+        $this->createdAt = new \DateTime();
     }
 
     public static function getUserTypeFromString(string $type): int
@@ -178,7 +177,7 @@ class AccessControlEntry implements AccessControlEntryInterface
         $this->mask = 0;
     }
 
-    public function getCreatedAt(): DateTime
+    public function getCreatedAt(): \DateTime
     {
         return $this->createdAt;
     }

@@ -3,8 +3,6 @@
 namespace Alchemy\AclBundle\Mapping;
 
 use Doctrine\Persistence\Proxy;
-use InvalidArgumentException;
-use ReflectionClass;
 
 class ObjectMapping
 {
@@ -20,7 +18,7 @@ class ObjectMapping
         $className = self::getRealClass($object);
 
         if (false === array_search($className, $this->mapping, true)) {
-            $reflection = new ReflectionClass($className);
+            $reflection = new \ReflectionClass($className);
             while ($reflection->getParentClass()) {
                 $reflection = $reflection->getParentClass();
                 if (false !== array_search($reflection->getName(), $this->mapping, true)) {
@@ -53,7 +51,7 @@ class ObjectMapping
     public function getClassName(string $objectKey): string
     {
         if (!isset($this->mapping[$objectKey])) {
-            throw new InvalidArgumentException(sprintf('Undefined object "%s" in the object mapping', $objectKey));
+            throw new \InvalidArgumentException(sprintf('Undefined object "%s" in the object mapping', $objectKey));
         }
 
         return $this->mapping[$objectKey];
@@ -64,7 +62,7 @@ class ObjectMapping
         $className = self::getRealClass($object);
 
         if (false === $key = array_search($className, $this->mapping, true)) {
-            $reflection = new ReflectionClass($className);
+            $reflection = new \ReflectionClass($className);
             while ($reflection->getParentClass()) {
                 $reflection = $reflection->getParentClass();
                 if (false !== $key = array_search($reflection->getName(), $this->mapping, true)) {
@@ -72,7 +70,7 @@ class ObjectMapping
                 }
             }
 
-            throw new InvalidArgumentException(sprintf('Class "%s" is not defined in the object mapping', $className));
+            throw new \InvalidArgumentException(sprintf('Class "%s" is not defined in the object mapping', $className));
         }
 
         return $key;
