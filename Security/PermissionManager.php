@@ -128,8 +128,7 @@ class PermissionManager
         ?string $userId,
         string $objectType,
         string $objectId
-    ): ?AccessControlEntryInterface
-    {
+    ): ?AccessControlEntryInterface {
         return $this->repository->findAce($userType, $userId, $objectType, $objectId);
     }
 

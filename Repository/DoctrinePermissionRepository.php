@@ -7,7 +7,6 @@ namespace Alchemy\AclBundle\Repository;
 use Alchemy\AclBundle\Entity\AccessControlEntry;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use InvalidArgumentException;
 
 class DoctrinePermissionRepository implements PermissionRepositoryInterface
 {
@@ -62,10 +61,9 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         ?string $userId,
         string $objectType,
         ?string $objectId
-    ): ?AccessControlEntryInterface
-    {
+    ): ?AccessControlEntryInterface {
         if (null !== $objectId && empty($objectId)) {
-            throw new InvalidArgumentException('Empty objectId');
+            throw new \InvalidArgumentException('Empty objectId');
         }
 
         $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
@@ -77,7 +75,6 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
                 'userType' => $userType,
                 'userId' => $userId,
             ]);
-
     }
 
     public function updateOrCreateAce(
@@ -87,8 +84,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         ?string $objectId,
         int $mask,
         bool $append = false
-    ): AccessControlEntryInterface
-    {
+    ): AccessControlEntryInterface {
         $ace = $this->findAce($userType, $userId, $objectType, $objectId);
 
         if (!$ace instanceof AccessControlEntry) {

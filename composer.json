@@ -6,7 +6,7 @@
   "homepage": "https://www.alchemy.fr/",
   "license": "MIT",
   "require": {
-    "php": "^7.4|^8.0",
+    "php": "^8.1",
     "ext-json": "*",
     "doctrine/orm": "^2.6",
     "ramsey/uuid-doctrine": "^1.5",
@@ -19,7 +19,8 @@
     "sort-packages": true
   },
   "scripts": {
-    "test": "./vendor/bin/phpunit"
+    "test": "./vendor/bin/phpunit",
+    "cs": "./vendor/bin/php-cs-fixer fix"
   },
   "autoload": {
     "psr-4": {

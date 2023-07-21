@@ -19,8 +19,7 @@ class AccessControlEntryRepository extends EntityRepository
         int $permission,
         bool $inner = true,
         string $aceAlias = 'ace'
-    ): void
-    {
+    ): void {
         $hasGroups = !empty($groupIds);
 
         $method = $inner ? 'innerJoin' : 'leftJoin';
