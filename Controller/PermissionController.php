@@ -108,7 +108,7 @@ class PermissionController extends AbstractController
             }
         }
 
-        $aces = $repository->findAces($params);
+        $aces = $repository->findAcesByParams($params);
 
         return new JsonResponse(array_map(function (AccessControlEntryInterface $ace) use ($aceSerializer): array {
             return $aceSerializer->serialize($ace);

@@ -62,7 +62,7 @@ class PermissionManager
 
         $groupsId = $this->userRepository->getAclGroupsId($user);
 
-        /** @var AccessControlEntry[] $aces */
+        /** @var AccessControlEntryInterface[] $aces */
         $aces = $this->repository->getAces(
             $user->getId(),
             $groupsId,
@@ -97,7 +97,7 @@ class PermissionManager
         );
     }
 
-    public function grantUserOnObject(string $userId, AclObjectInterface $object, int $permissions): void
+    public function grantUserOnObject(string $userId, AclObjectInterface $object, int $permissions, ?string $parentId): void
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
 
@@ -106,11 +106,12 @@ class PermissionManager
             $userId,
             $objectKey,
             $object->getId(),
-            $permissions
+            $permissions,
+            $parentId
         );
     }
 
-    public function grantGroupOnObject(string $userId, AclObjectInterface $object, int $permissions): void
+    public function grantGroupOnObject(string $userId, AclObjectInterface $object, int $permissions, ?string $parentId): void
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
 
@@ -119,7 +120,8 @@ class PermissionManager
             $userId,
             $objectKey,
             $object->getId(),
-            $permissions
+            $permissions,
+            $parentId
         );
     }
 
@@ -127,12 +129,35 @@ class PermissionManager
         int $userType,
         ?string $userId,
         string $objectType,
-        string $objectId
-    ): ?AccessControlEntryInterface {
-        return $this->repository->findAce($userType, $userId, $objectType, $objectId);
+        string $objectId,
+        ?string $parentId = null,
+    ): ?AccessControlEntryInterface
+    {
+        return $this->repository->findAce($userType, $userId, $objectType, $objectId, $parentId);
     }
 
-    public function updateOrCreateAce(int $userType, string $userId, string $objectType, ?string $objectId, int $permissions, bool $append = false): ?AccessControlEntryInterface
+    /**
+     * @return AccessControlEntryInterface[]
+     */
+    public function findAces(
+        int $userType,
+        ?string $userId,
+        string $objectType,
+        string $objectId,
+    ): array
+    {
+        return $this->repository->findAces($userType, $userId, $objectType, $objectId);
+    }
+
+    public function updateOrCreateAce(
+        int $userType,
+        string $userId,
+        string $objectType,
+        ?string $objectId,
+        int $permissions,
+        ?string $parentId = null,
+        bool $append = false,
+    ): ?AccessControlEntryInterface
     {
         $ace = $this->repository->updateOrCreateAce(
             $userType,
@@ -140,6 +165,7 @@ class PermissionManager
             $objectType,
             $objectId,
             $permissions,
+            $parentId,
             $append
         );
 
@@ -155,13 +181,14 @@ class PermissionManager
         return sprintf('%d:%s:%s:%s', $userType, $userId, $objectType, $objectId);
     }
 
-    public function deleteAce(int $userType, string $userId, string $objectType, ?string $objectId): void
+    public function deleteAce(int $userType, string $userId, string $objectType, ?string $objectId, ?string $parentId = null): void
     {
         if ($this->repository->deleteAce(
             $userType,
             $userId,
             $objectType,
-            $objectId
+            $objectId,
+            $parentId
         )) {
             $this->eventDispatcher->dispatch(new AclDeleteEvent($userType, $userId, $objectType, $objectId), AclDeleteEvent::NAME);
         }

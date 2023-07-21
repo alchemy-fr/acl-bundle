@@ -51,4 +51,8 @@ interface AccessControlEntryInterface
     public function removePermission(int $permission): void;
 
     public function resetPermissions(): void;
+
+    public function getParentId(): ?string;
+
+    public function setParentId(?string $parentId): void;
 }

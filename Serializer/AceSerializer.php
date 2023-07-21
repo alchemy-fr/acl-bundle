@@ -17,6 +17,7 @@ class AceSerializer
             'objectType' => $ace->getObjectType(),
             'objectId' => $ace->getObjectId(),
             'mask' => $ace->getMask(),
+            'parentId' => $ace->getParentId(),
         ];
     }
 }

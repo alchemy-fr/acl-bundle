@@ -24,8 +24,16 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
                 'objectType' => $objectType,
                 'objectId' => $objectId,
             ], [
+                'parentId' => 'DESC',
                 'createdAt' => 'DESC',
             ]);
+    }
+
+    public function findAcesByParams(array $params = []): array
+    {
+        return $this->em
+            ->getRepository(AccessControlEntry::class)
+            ->findAcesByParams($params);
     }
 
     public function getAces(string $userId, array $groupIds, string $objectType, ?string $objectId): array
@@ -33,13 +41,6 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         return $this->em
             ->getRepository(AccessControlEntry::class)
             ->getAces($userId, $groupIds, $objectType, $objectId);
-    }
-
-    public function findAces(array $params = []): array
-    {
-        return $this->em
-            ->getRepository(AccessControlEntry::class)
-            ->findAces($params);
     }
 
     public function getAllowedUserIds(string $objectType, string $objectId, int $permission): array
@@ -60,7 +61,8 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         int $userType,
         ?string $userId,
         string $objectType,
-        ?string $objectId
+        ?string $objectId,
+        ?string $parentId = null,
     ): ?AccessControlEntryInterface {
         if (null !== $objectId && empty($objectId)) {
             throw new \InvalidArgumentException('Empty objectId');
@@ -74,6 +76,31 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
                 'objectId' => $objectId,
                 'userType' => $userType,
                 'userId' => $userId,
+                'parentId' => $parentId,
+            ]);
+
+    }
+
+    public function findAces(
+        int $userType,
+        ?string $userId,
+        string $objectType,
+        ?string $objectId,
+    ): array {
+        if (null !== $objectId && empty($objectId)) {
+            throw new InvalidArgumentException('Empty objectId');
+        }
+
+        $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
+
+        return $this->em->getRepository(AccessControlEntry::class)
+            ->findBy([
+                'objectType' => $objectType,
+                'objectId' => $objectId,
+                'userType' => $userType,
+                'userId' => $userId,
+            ], [
+                'parentId' => 'ASC',
             ]);
     }
 
@@ -83,9 +110,11 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         string $objectType,
         ?string $objectId,
         int $mask,
+        ?string $parentId = null,
         bool $append = false
-    ): AccessControlEntryInterface {
-        $ace = $this->findAce($userType, $userId, $objectType, $objectId);
+    ): AccessControlEntryInterface
+    {
+        $ace = $this->findAce($userType, $userId, $objectType, $objectId, $parentId);
 
         if (!$ace instanceof AccessControlEntry) {
             $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
@@ -94,6 +123,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
             $ace->setUserId($userId);
             $ace->setObjectType($objectType);
             $ace->setObjectId($objectId);
+            $ace->setParentId($parentId);
         }
 
         if ($append) {
@@ -108,7 +138,13 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         return $ace;
     }
 
-    public function deleteAce(int $userType, ?string $userId, string $objectType, ?string $objectId): bool
+    public function deleteAce(
+        int $userType,
+        ?string $userId,
+        string $objectType,
+        ?string $objectId,
+        ?string $parentId = null,
+    ): bool
     {
         $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
 
@@ -118,6 +154,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
                 'objectId' => $objectId,
                 'userType' => $userType,
                 'userId' => $userId,
+                'parentId' => $parentId,
             ]);
 
         if ($ace instanceof AccessControlEntry) {

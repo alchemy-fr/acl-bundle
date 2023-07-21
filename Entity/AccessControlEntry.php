@@ -10,12 +10,13 @@ use Ramsey\Uuid\Uuid;
 
 /**
  * @ORM\Table(
- *     uniqueConstraints={@ORM\UniqueConstraint(name="uniq_ace", columns={"user_type", "user_id", "object_type", "object_id"})},
+ *     uniqueConstraints={@ORM\UniqueConstraint(name="uniq_ace", columns={"user_type", "user_id", "object_type", "object_id", "parent_id"})},
  *     indexes={
  *         @ORM\Index(name="user_idx", columns={"user_type", "user_id"}),
  *         @ORM\Index(name="object_idx", columns={"object_type", "object_id"}),
  *         @ORM\Index(name="user_type_idx", columns={"user_type"}),
  *         @ORM\Index(name="object_type_idx", columns={"object_type"}),
+ *         @ORM\Index(name="parent_idx", columns={"parent_id"}),
  *     }
  * )
  * @ORM\Entity(repositoryClass="AccessControlEntryRepository")
@@ -58,6 +59,13 @@ class AccessControlEntry implements AccessControlEntryInterface
      * @ORM\Column(type="integer")
      */
     protected int $mask = 0;
+
+    /**
+     * i.e. "p:b9ccf60e-9f08-4388-b703-2953c40cb0a7".
+     *
+     * @ORM\Column(type="string", length=39, nullable=true)
+     */
+    protected ?string $parentId = null;
 
     /**
      * @ORM\Column(type="datetime")
@@ -190,5 +198,15 @@ class AccessControlEntry implements AccessControlEntryInterface
     public function setUserTypeString(string $type): void
     {
         $this->setUserType(self::getUserTypeFromString($type));
+    }
+
+    public function getParentId(): ?string
+    {
+        return $this->parentId;
+    }
+
+    public function setParentId(?string $parentId): void
+    {
+        $this->parentId = $parentId;
     }
 }

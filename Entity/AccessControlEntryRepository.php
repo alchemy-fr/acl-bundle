@@ -91,7 +91,7 @@ class AccessControlEntryRepository extends EntityRepository
             ->getResult();
     }
 
-    public function findAces(array $params = []): array
+    public function findAcesByParams(array $params = []): array
     {
         $queryBuilder = $this->createBaseQueryBuilder();
 
@@ -116,6 +116,7 @@ class AccessControlEntryRepository extends EntityRepository
             }
         }
 
+        $queryBuilder->addOrderBy('a.parentId', 'ASC');
         $queryBuilder->addOrderBy('a.createdAt', 'ASC');
 
         return $queryBuilder
