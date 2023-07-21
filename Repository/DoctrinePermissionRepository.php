@@ -62,7 +62,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         ?string $userId,
         string $objectType,
         ?string $objectId,
-        ?string $parentId = null,
+        string $parentId = null,
     ): ?AccessControlEntryInterface {
         if (null !== $objectId && empty($objectId)) {
             throw new \InvalidArgumentException('Empty objectId');
@@ -110,10 +110,9 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         string $objectType,
         ?string $objectId,
         int $mask,
-        ?string $parentId = null,
+        string $parentId = null,
         bool $append = false
-    ): AccessControlEntryInterface
-    {
+    ): AccessControlEntryInterface {
         $ace = $this->findAce($userType, $userId, $objectType, $objectId, $parentId);
 
         if (!$ace instanceof AccessControlEntry) {
@@ -143,9 +142,8 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         ?string $userId,
         string $objectType,
         ?string $objectId,
-        ?string $parentId = null,
-    ): bool
-    {
+        string $parentId = null,
+    ): bool {
         $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
 
         $ace = $this->em->getRepository(AccessControlEntry::class)

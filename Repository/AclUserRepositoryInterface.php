@@ -8,7 +8,7 @@ use Alchemy\AclBundle\Model\AclUserInterface;
 
 interface AclUserRepositoryInterface
 {
-    public function getAclUsers(?int $limit = null, int $offset = 0): array;
+    public function getAclUsers(int $limit = null, int $offset = 0): array;
 
     public function getAclGroupsId(AclUserInterface $user): array;
 }

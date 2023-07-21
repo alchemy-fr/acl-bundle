@@ -29,7 +29,7 @@ interface PermissionRepositoryInterface
         ?string $userId,
         string $objectType,
         string $objectId,
-        ?string $parentId = null,
+        string $parentId = null,
     ): ?AccessControlEntryInterface;
 
     public function findAces(
@@ -45,7 +45,7 @@ interface PermissionRepositoryInterface
         string $objectType,
         ?string $objectId,
         int $mask,
-        ?string $parentId = null,
+        string $parentId = null,
         bool $append = false
     ): AccessControlEntryInterface;
 
@@ -57,6 +57,6 @@ interface PermissionRepositoryInterface
         string $userId,
         string $objectType,
         ?string $objectId,
-        ?string $parentId = null,
+        string $parentId = null,
     ): bool;
 }

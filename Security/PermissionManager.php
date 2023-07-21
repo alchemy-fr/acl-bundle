@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Alchemy\AclBundle\Security;
 
 use Alchemy\AclBundle\AclObjectInterface;
-use Alchemy\AclBundle\Entity\AccessControlEntry;
 use Alchemy\AclBundle\Event\AclDeleteEvent;
 use Alchemy\AclBundle\Event\AclUpsertEvent;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
@@ -130,9 +129,8 @@ class PermissionManager
         ?string $userId,
         string $objectType,
         string $objectId,
-        ?string $parentId = null,
-    ): ?AccessControlEntryInterface
-    {
+        string $parentId = null,
+    ): ?AccessControlEntryInterface {
         return $this->repository->findAce($userType, $userId, $objectType, $objectId, $parentId);
     }
 
@@ -144,8 +142,7 @@ class PermissionManager
         ?string $userId,
         string $objectType,
         string $objectId,
-    ): array
-    {
+    ): array {
         return $this->repository->findAces($userType, $userId, $objectType, $objectId);
     }
 
@@ -155,10 +152,9 @@ class PermissionManager
         string $objectType,
         ?string $objectId,
         int $permissions,
-        ?string $parentId = null,
+        string $parentId = null,
         bool $append = false,
-    ): ?AccessControlEntryInterface
-    {
+    ): ?AccessControlEntryInterface {
         $ace = $this->repository->updateOrCreateAce(
             $userType,
             $userId,
@@ -181,7 +177,7 @@ class PermissionManager
         return sprintf('%d:%s:%s:%s', $userType, $userId, $objectType, $objectId);
     }
 
-    public function deleteAce(int $userType, string $userId, string $objectType, ?string $objectId, ?string $parentId = null): void
+    public function deleteAce(int $userType, string $userId, string $objectType, ?string $objectId, string $parentId = null): void
     {
         if ($this->repository->deleteAce(
             $userType,
