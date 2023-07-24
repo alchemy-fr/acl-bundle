@@ -36,6 +36,13 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
             ->findAcesByParams($params);
     }
 
+    public function deleteAcesByParams(array $params = []): void
+    {
+        $this->em
+            ->getRepository(AccessControlEntry::class)
+            ->deleteAcesByParams($params);
+    }
+
     public function getAces(string $userId, array $groupIds, string $objectType, ?string $objectId): array
     {
         return $this->em
@@ -88,7 +95,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         ?string $objectId,
     ): array {
         if (null !== $objectId && empty($objectId)) {
-            throw new InvalidArgumentException('Empty objectId');
+            throw new \InvalidArgumentException('Empty objectId');
         }
 
         $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;

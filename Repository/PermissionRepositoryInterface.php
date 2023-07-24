@@ -13,6 +13,8 @@ interface PermissionRepositoryInterface
      */
     public function findAcesByParams(array $params = []): array;
 
+    public function deleteAcesByParams(array $params = []): void;
+
     public function getAces(string $userId, array $groupIds, string $objectType, ?string $objectId): array;
 
     public function getAllowedUserIds(string $objectType, string $objectId, int $permission): array;

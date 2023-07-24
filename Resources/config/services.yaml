@@ -22,3 +22,5 @@ services:
   Alchemy\AclBundle\Security\Voter\SetPermissionVoter:
     tags:
       - { name: security.voter }
+
+  Alchemy\AclBundle\Doctrine\Listener\AclObjectDeleteListener: ~

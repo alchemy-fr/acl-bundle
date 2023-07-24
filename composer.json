@@ -36,6 +36,7 @@
     }
   },
   "require-dev": {
+    "doctrine/doctrine-bundle": "^2.10",
     "friendsofphp/php-cs-fixer": "^3",
     "phpunit/phpunit": "^8.4|^10.2.2"
   }

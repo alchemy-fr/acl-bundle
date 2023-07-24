@@ -91,16 +91,15 @@ class AccessControlEntryRepository extends EntityRepository
             ->getResult();
     }
 
-    public function findAcesByParams(array $params = []): array
+    private function applyParams(QueryBuilder $queryBuilder, array $params = []): void
     {
-        $queryBuilder = $this->createBaseQueryBuilder();
-
         foreach ([
             'objectType' => 'ot',
             'userType' => 'ut',
             'objectId' => 'oid',
             'userId' => 'uid',
-                 ] as $col => $alias) {
+            'parentId' => 'pid',
+        ] as $col => $alias) {
             if (isset($params[$col])) {
                 $queryBuilder
                     ->andWhere(sprintf('a.%s = :%s', $col, $alias))
@@ -110,11 +109,24 @@ class AccessControlEntryRepository extends EntityRepository
         foreach ([
             'objectId' => 'oid',
             'userId' => 'uid',
-                 ] as $col => $alias) {
+            'parentId' => 'pid',
+        ] as $col => $alias) {
             if (array_key_exists($col, $params) && null === $params[$col]) {
                 $queryBuilder->andWhere(sprintf('a.%s IS NULL', $col));
             }
         }
+
+        if (isset($params['permission'])) {
+            $queryBuilder
+                ->andWhere('BIT_AND(a.mask, :p) = :p')
+                ->setParameter('p', $params['permission']);
+        }
+    }
+
+    public function findAcesByParams(array $params = []): array
+    {
+        $queryBuilder = $this->createBaseQueryBuilder();
+        $this->applyParams($queryBuilder, $params);
 
         $queryBuilder->addOrderBy('a.parentId', 'ASC');
         $queryBuilder->addOrderBy('a.createdAt', 'ASC');
@@ -122,6 +134,18 @@ class AccessControlEntryRepository extends EntityRepository
         return $queryBuilder
             ->getQuery()
             ->getResult();
+    }
+
+    public function deleteAcesByParams(array $params = []): void
+    {
+        $queryBuilder = $this->createQueryBuilder('a')
+            ->delete();
+
+        $this->applyParams($queryBuilder, $params);
+
+        $queryBuilder
+            ->getQuery()
+            ->execute();
     }
 
     public function getAllowedUserIds(string $objectType, string $objectId, int $permission): array
