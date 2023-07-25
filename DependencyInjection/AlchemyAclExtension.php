@@ -17,7 +17,7 @@ use Symfony\Component\Yaml\Parser;
  */
 class AlchemyAclExtension extends Extension implements PrependExtensionInterface
 {
-    public function load(array $configs, ContainerBuilder $container)
+    public function load(array $configs, ContainerBuilder $container): void
     {
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
@@ -31,7 +31,7 @@ class AlchemyAclExtension extends Extension implements PrependExtensionInterface
         $container->setParameter('alchemy_acl.enabled_permissions', !empty($config['enabled_permissions']) ? $config['enabled_permissions'] : null);
     }
 
-    public function prepend(ContainerBuilder $container)
+    public function prepend(ContainerBuilder $container): void
     {
         $bundles = $container->getParameter('kernel.bundles');
 
