@@ -7,6 +7,7 @@ namespace Alchemy\AclBundle\Entity;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Table(
@@ -36,7 +37,7 @@ class AccessControlEntry implements AccessControlEntryInterface
     /**
      * @ORM\Column(type="smallint")
      */
-    protected ?int $userType = null;
+    protected int $userType = self::TYPE_USER_VALUE;
 
     /**
      * @ORM\Column(type="string", length=36, nullable=true)
@@ -48,6 +49,7 @@ class AccessControlEntry implements AccessControlEntryInterface
      *
      * @ORM\Column(type="string", length=20)
      */
+    #[Assert\NotNull]
     protected ?string $objectType = null;
 
     /**
@@ -95,7 +97,7 @@ class AccessControlEntry implements AccessControlEntryInterface
 
     public function getUserType(): int
     {
-        return $this->userType ?? self::TYPE_USER_VALUE;
+        return $this->userType;
     }
 
     public function setUserType(int $userType): void

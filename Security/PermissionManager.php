@@ -96,7 +96,7 @@ class PermissionManager
         );
     }
 
-    public function grantUserOnObject(string $userId, AclObjectInterface $object, int $permissions, ?string $parentId = null): void
+    public function grantUserOnObject(string $userId, AclObjectInterface $object, int $permissions, string $parentId = null): void
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
 
@@ -110,7 +110,7 @@ class PermissionManager
         );
     }
 
-    public function grantGroupOnObject(string $userId, AclObjectInterface $object, int $permissions, ?string $parentId = null): void
+    public function grantGroupOnObject(string $userId, AclObjectInterface $object, int $permissions, string $parentId = null): void
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
 
