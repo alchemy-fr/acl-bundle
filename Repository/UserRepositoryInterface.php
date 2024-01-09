@@ -7,4 +7,6 @@ namespace Alchemy\AclBundle\Repository;
 interface UserRepositoryInterface
 {
     public function getUsers(int $limit, int $offset = 0): array;
+
+    public function getUser(string $userId): ?array;
 }

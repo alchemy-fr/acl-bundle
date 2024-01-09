@@ -58,7 +58,7 @@ class PermissionController extends AbstractController
     /**
      * @Route("/ace", methods={"PUT"}, name="ace")
      */
-    public function setAce(Request $request): Response
+    public function setAce(Request $request, AceSerializer $aceSerializer): Response
     {
         $data = $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $request);
 
@@ -72,9 +72,9 @@ class PermissionController extends AbstractController
 
         $userType = AccessControlEntry::getUserTypeFromString($userType);
 
-        $this->permissionManager->updateOrCreateAce($userType, $userId, $objectType, $objectId, $mask);
+        $ace = $this->permissionManager->updateOrCreateAce($userType, $userId, $objectType, $objectId, $mask);
 
-        return new JsonResponse(true);
+        return new JsonResponse($aceSerializer->serialize($ace));
     }
 
     /**

@@ -10,7 +10,7 @@ use Alchemy\AclBundle\Event\AclUpsertEvent;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
 use Alchemy\AclBundle\Model\AclUserInterface;
-use Alchemy\AclBundle\Repository\AclUserRepositoryInterface;
+use Alchemy\AclBundle\Repository\UserRepositoryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -19,14 +19,14 @@ class PermissionManager
     private ObjectMapping $objectMapper;
     private PermissionRepositoryInterface $repository;
     private EventDispatcherInterface $eventDispatcher;
-    private AclUserRepositoryInterface $userRepository;
+    private UserRepositoryInterface $userRepository;
     private array $cache = [];
 
     public function __construct(
         ObjectMapping $objectMapper,
         PermissionRepositoryInterface $repository,
         EventDispatcherInterface $eventDispatcher,
-        AclUserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository
     ) {
         $this->objectMapper = $objectMapper;
         $this->repository = $repository;

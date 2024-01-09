@@ -6,7 +6,7 @@ namespace Alchemy\AclBundle\Tests;
 
 use Alchemy\AclBundle\Entity\AccessControlEntry;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
-use Alchemy\AclBundle\Repository\AclUserRepositoryInterface;
+use Alchemy\AclBundle\Repository\UserRepositoryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
 use Alchemy\AclBundle\Security\PermissionInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
@@ -38,7 +38,7 @@ class PermissionTest extends TestCase
 
         $user = new AclUserMock('123');
 
-        $userRepo = $this->createMock(AclUserRepositoryInterface::class);
+        $userRepo = $this->createMock(UserRepositoryInterface::class);
         $userRepo
             ->expects($this->once())
             ->method('getAclGroupsId')
@@ -80,7 +80,7 @@ class PermissionTest extends TestCase
 
         $user = new AclUserMock('123');
 
-        $userRepo = $this->createMock(AclUserRepositoryInterface::class);
+        $userRepo = $this->createMock(UserRepositoryInterface::class);
         $userRepo
             ->expects($this->once())
             ->method('getAclGroupsId')

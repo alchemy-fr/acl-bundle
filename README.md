@@ -19,7 +19,7 @@ Then you must alias your UserRepository service:
 ```yaml
 # config/services.yaml
 services:
-    Alchemy\AclBundle\Repository\AclUserRepositoryInterface: '@App\Repository\UserRepository'
+    Alchemy\AclBundle\Repository\UserRepositoryInterface: '@App\Repository\UserRepository'
 ```
 
 Add redis cache for access token:
