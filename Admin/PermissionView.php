@@ -107,12 +107,13 @@ class PermissionView
                         return $user['username'];
                     }
 
-                    return 'User not found';
+                    return sprintf('User "%s" not found', $userId);
                 case AccessControlEntryInterface::TYPE_GROUP_VALUE:
                     if (null !== $group = $this->groupRepository->getGroup($userId)) {
                         return $group['name'];
                     }
-                    return 'Group not found';
+
+                    return sprintf('Group "%s" not found', $userId);
             }
         }
 
