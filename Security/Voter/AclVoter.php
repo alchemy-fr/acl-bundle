@@ -21,6 +21,16 @@ class AclVoter extends Voter
         return is_numeric($attribute) && $subject instanceof AclObjectInterface;
     }
 
+    public function supportsAttribute(string $attribute): bool
+    {
+        return is_numeric($attribute);
+    }
+
+    public function supportsType(string $subjectType): bool
+    {
+        return is_a($subjectType, AclObjectInterface::class, true);
+    }
+
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
         $user = $token->getUser();

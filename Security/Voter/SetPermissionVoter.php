@@ -25,8 +25,25 @@ class SetPermissionVoter extends Voter
             $attribute, [
                 self::ACL_READ,
                 self::ACL_WRITE,
-            ]
+            ],
+                true
         ) && $subject instanceof AclObjectInterface;
+    }
+
+    public function supportsAttribute(string $attribute): bool
+    {
+        return in_array(
+            $attribute, [
+                self::ACL_READ,
+                self::ACL_WRITE,
+            ],
+            true
+        );
+    }
+
+    public function supportsType(string $subjectType): bool
+    {
+        return is_a($subjectType, AclObjectInterface::class, true);
     }
 
     /**
