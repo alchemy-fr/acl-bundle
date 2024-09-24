@@ -19,6 +19,8 @@ readonly class AceSerializer
 
     public function serialize(AccessControlEntryInterface $ace): array
     {
+        $userId = $ace->getUserId();
+
         $payload = [
             'id' => $ace->getId(),
             'userType' => array_search($ace->getUserType(), AccessControlEntryInterface::USER_TYPES, true),
@@ -29,11 +31,12 @@ readonly class AceSerializer
             'parentId' => $ace->getParentId(),
         ];
 
-        $id = $ace->getUserId();
-        if ($ace->getUserType() === AccessControlEntryInterface::TYPE_USER_VALUE) {
-            $payload['user'] = $this->userRepository->getUser($id);
-        } elseif ($ace->getUserType() === AccessControlEntryInterface::TYPE_GROUP_VALUE) {
-            $payload['group'] = $this->groupRepository->getGroup($id);
+        if (null !== $userId) {
+            if ($ace->getUserType() === AccessControlEntryInterface::TYPE_USER_VALUE) {
+                $payload['user'] = $this->userRepository->getUser($userId);
+            } elseif ($ace->getUserType() === AccessControlEntryInterface::TYPE_GROUP_VALUE) {
+                $payload['group'] = $this->groupRepository->getGroup($userId);
+            }
         }
 
         return $payload;

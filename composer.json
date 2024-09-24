@@ -6,7 +6,7 @@
   "homepage": "https://www.alchemy.fr/",
   "license": "MIT",
   "require": {
-    "php": "^8.1",
+    "php": "^8.2",
     "ext-json": "*",
     "doctrine/orm": "^2.6",
     "ramsey/uuid-doctrine": "^1.5",
