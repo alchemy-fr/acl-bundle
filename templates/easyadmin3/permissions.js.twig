@@ -85,7 +85,7 @@ $(function () {
                     );
                 }
             })
-            .on('select2:select', function (e) {
+            .on('select2:select', function () {
                 const data = $(this).select2('data');
                 const userId = data[0].id;
 
@@ -98,9 +98,9 @@ $(function () {
 
                 const $newAce = $($('#row-template')
                     .html()
-                    .replace(/\#USERTYPE\#/g, userType)
-                    .replace(/\#USERID\#/g, userId)
-                    .replace(/\#ENTITYNAME\#/g, data[0].text));
+                    .replace(/#USERTYPE#/g, userType)
+                    .replace(/#USERID#/g, userId)
+                    .replace(/#ENTITYNAME#/g, data[0].text));
                 if (userId === '{{ USER_WILDCARD }}') {
                     $newAce.addClass('type-wildcard');
                 }

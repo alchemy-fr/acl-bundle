@@ -72,7 +72,7 @@ class AlchemyAclBundle extends AbstractBundle
         $services->set(DoctrinePermissionRepository::class);
         $services->set(PermissionManager::class);
         $services->set(ObjectMapping::class)
-            ->set('$mapping', $config['objects']);
+            ->arg('$mapping', $config['objects']);
         $services->set(AceSerializer::class);
         $services->set(PermissionController::class);
         $services->set(AclObjectDeleteListener::class);

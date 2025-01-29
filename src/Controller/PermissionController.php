@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 class PermissionController extends AbstractController
 {
@@ -48,9 +48,7 @@ class PermissionController extends AbstractController
         throw new AccessDeniedHttpException();
     }
 
-    /**
-     * @Route("/ace", methods={"PUT"}, name="ace")
-     */
+    #[Route(path: '/ace', name: 'ace', methods: ['PUT'])]
     public function setAce(Request $request, AceSerializer $aceSerializer): Response
     {
         $data = $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $request);
@@ -70,9 +68,7 @@ class PermissionController extends AbstractController
         return new JsonResponse($aceSerializer->serialize($ace));
     }
 
-    /**
-     * @Route("/aces", methods={"GET"}, name="aces_index")
-     */
+    #[Route(path: '/aces', name: 'aces_index', methods: ['GET'])]
     public function indexAces(
         Request $request,
         PermissionRepositoryInterface $repository,
@@ -102,9 +98,7 @@ class PermissionController extends AbstractController
         return new JsonResponse(array_map(fn (AccessControlEntryInterface $ace): array => $aceSerializer->serialize($ace), $aces));
     }
 
-    /**
-     * @Route("/ace", methods={"DELETE"}, name="ace_delete")
-     */
+    #[Route(path: '/ace', name: 'ace_delete', methods: ['DELETE'])]
     public function deleteAce(Request $request): Response
     {
         $data = $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $request);
