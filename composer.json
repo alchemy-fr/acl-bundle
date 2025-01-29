@@ -20,12 +20,13 @@
     "sort-packages": true
   },
   "scripts": {
-    "test": "./vendor/bin/phpunit",
-    "cs": "./vendor/bin/php-cs-fixer fix"
+    "test": "vendor/bin/phpunit",
+    "cs": "PHP_CS_FIXER_IGNORE_ENV=1 vendor/bin/php-cs-fixer fix",
+    "rector": "vendor/bin/rector"
   },
   "autoload": {
     "psr-4": {
-      "Alchemy\\AclBundle\\": ""
+      "Alchemy\\AclBundle\\": "src"
     },
     "exclude-from-classmap": [
       "/Tests/"
@@ -33,12 +34,13 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Alchemy\\AclBundle\\Tests\\": "/Tests/"
+      "Alchemy\\AclBundle\\Tests\\": "tests"
     }
   },
   "require-dev": {
     "doctrine/doctrine-bundle": "^2.10",
     "friendsofphp/php-cs-fixer": "^3",
-    "phpunit/phpunit": "^8.4|^10.2.2"
+    "phpunit/phpunit": "^8.4|^10.2.2",
+    "rector/rector": "^2.0.7"
   }
 }
