@@ -8,9 +8,9 @@ use Alchemy\AclBundle\Model\AclUserInterface;
 
 interface UserRepositoryInterface
 {
-    public function getUsers(int $limit, int $offset = 0): array;
+    public function getUsers(array $options = []): array;
 
-    public function getUser(string $userId): ?array;
+    public function getUser(string $userId, array $options = []): ?array;
 
     public function getAclGroupsId(AclUserInterface $user): array;
 }
