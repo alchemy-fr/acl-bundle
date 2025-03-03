@@ -19,6 +19,7 @@ class AccessControlEntryRepository extends EntityRepository
         int $permission,
         bool $inner = true,
         string $aceAlias = 'ace',
+        string $paramPrefix = '',
     ): void {
         $hasGroups = !empty($groupIds);
 
@@ -30,24 +31,25 @@ class AccessControlEntryRepository extends EntityRepository
                 $aceAlias,
                 Join::WITH,
                 sprintf(
-                    '%1$s.objectType = :ot AND (%1$s.objectId = %2$s.id OR %1$s.objectId IS NULL) AND BIT_AND(%1$s.mask, :perm) = :perm'
-                        .' AND (%1$s.userId IS NULL OR (%1$s.userType = :uty AND %1$s.userId = :uid)'
-                        .($hasGroups ? ' OR (%1$s.userType = :gty AND %1$s.userId IN (:gids))' : '')
-                        .')',
+                    '%1$s.objectType = :%3$sot AND (%1$s.objectId = %2$s.id OR %1$s.objectId IS NULL) AND BIT_AND(%1$s.mask, :%3$sperm) = :%3$sperm'
+                    .' AND (%1$s.userId IS NULL OR (%1$s.userType = :%3$suty AND %1$s.userId = :%3$suid)'
+                    .($hasGroups ? ' OR (%1$s.userType = :%3$sgty AND %1$s.userId IN (:%3$sgids))' : '')
+                    .')',
                     $aceAlias,
-                    $objectTableAlias
+                    $objectTableAlias,
+                    $paramPrefix
                 )
             )
-            ->setParameter('uty', AccessControlEntry::TYPE_USER_VALUE)
-            ->setParameter('ot', $objectType)
-            ->setParameter('uid', $userId)
-            ->setParameter('perm', $permission)
+            ->setParameter($paramPrefix.'uty', AccessControlEntry::TYPE_USER_VALUE)
+            ->setParameter($paramPrefix.'ot', $objectType)
+            ->setParameter($paramPrefix.'uid', $userId)
+            ->setParameter($paramPrefix.'perm', $permission)
         ;
 
         if ($hasGroups) {
             $queryBuilder
-                ->setParameter('gty', AccessControlEntry::TYPE_GROUP_VALUE)
-                ->setParameter('gids', $groupIds);
+                ->setParameter($paramPrefix.'gty', AccessControlEntry::TYPE_GROUP_VALUE)
+                ->setParameter($paramPrefix.'gids', $groupIds);
         }
     }
 
