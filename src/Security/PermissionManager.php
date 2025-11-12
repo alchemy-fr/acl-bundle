@@ -62,6 +62,19 @@ class PermissionManager
         return $aces;
     }
 
+    /**
+     * @return AccessControlEntryInterface[]
+     */
+    public function getObjectAces(AclObjectInterface $object): array
+    {
+        $objectKey = $this->objectMapper->getObjectKey($object);
+
+        return $this->repository->getObjectAces(
+            $objectKey,
+            $object->getId()
+        );
+    }
+
     public function getAllowedUsers(AclObjectInterface $object, int $permission): array
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
