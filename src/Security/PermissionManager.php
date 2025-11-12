@@ -18,8 +18,12 @@ class PermissionManager
 {
     private array $cache = [];
 
-    public function __construct(private readonly ObjectMapping $objectMapper, private readonly PermissionRepositoryInterface $repository, private readonly EventDispatcherInterface $eventDispatcher, private readonly UserRepositoryInterface $userRepository)
-    {
+    public function __construct(
+        private readonly ObjectMapping $objectMapper,
+        private readonly PermissionRepositoryInterface $repository,
+        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly UserRepositoryInterface $userRepository,
+    ) {
     }
 
     public function isGranted(AclUserInterface $user, AclObjectInterface $object, int $permission): bool
@@ -69,9 +73,15 @@ class PermissionManager
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
 
-        return $this->repository->getObjectAces(
-            $objectKey,
-            $object->getId()
+        return array_merge(
+            $this->repository->getObjectAces(
+                $objectKey,
+                $object->getId()
+            ),
+            $this->repository->getObjectAces(
+                $objectKey,
+                null
+            )
         );
     }
 
@@ -97,8 +107,12 @@ class PermissionManager
         );
     }
 
-    public function grantUserOnObject(string $userId, AclObjectInterface $object, int $permissions, ?string $parentId = null): void
-    {
+    public function grantUserOnObject(
+        string $userId,
+        AclObjectInterface $object,
+        int $permissions,
+        ?string $parentId = null,
+    ): void {
         $objectKey = $this->objectMapper->getObjectKey($object);
 
         $this->updateOrCreateAce(
@@ -111,8 +125,12 @@ class PermissionManager
         );
     }
 
-    public function grantGroupOnObject(string $userId, AclObjectInterface $object, int $permissions, ?string $parentId = null): void
-    {
+    public function grantGroupOnObject(
+        string $userId,
+        AclObjectInterface $object,
+        int $permissions,
+        ?string $parentId = null,
+    ): void {
         $objectKey = $this->objectMapper->getObjectKey($object);
 
         $this->updateOrCreateAce(
@@ -178,8 +196,13 @@ class PermissionManager
         return sprintf('%d:%s:%s:%s', $userType, $userId, $objectType, $objectId);
     }
 
-    public function deleteAce(int $userType, string $userId, string $objectType, ?string $objectId, ?string $parentId = null): void
-    {
+    public function deleteAce(
+        int $userType,
+        string $userId,
+        string $objectType,
+        ?string $objectId,
+        ?string $parentId = null,
+    ): void {
         if ($this->repository->deleteAce(
             $userType,
             $userId,
