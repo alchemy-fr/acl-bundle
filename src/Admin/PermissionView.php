@@ -47,7 +47,7 @@ class PermissionView
             'userId' => $ace->getUserId() ?? AccessControlEntryInterface::USER_WILDCARD,
             'name' => $this->resolveUserName($ace),
             'objectId' => $ace->getObjectId(),
-            'permissions' => array_map(fn (int $p): bool => $ace->hasPermission($p), $permissions),
+            'permissions' => array_map($ace->hasPermission(...), $permissions),
         ], $aces);
 
         $objectTitle = null;

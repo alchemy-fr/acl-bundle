@@ -12,14 +12,13 @@ use Alchemy\AclBundle\Security\PermissionInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
 use Alchemy\AclBundle\Tests\Mock\AclUserMock;
 use Alchemy\AclBundle\Tests\Mock\ObjectMock;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class PermissionTest extends TestCase
 {
-    /**
-     * @dataProvider permissionProvider
-     */
+    #[DataProvider('permissionProvider')]
     public function testPermissionsWithUser(array $acePermissions, int $permissionToTest, bool $expectedResult)
     {
         $ace = $this->createAce(AccessControlEntry::TYPE_USER_VALUE, '123', 'pub', '42', $acePermissions);
@@ -53,9 +52,7 @@ class PermissionTest extends TestCase
         $this->assertEquals($expectedResult, $permissionManager->isGranted($user, $object, $permissionToTest));
     }
 
-    /**
-     * @dataProvider permissionProvider
-     */
+    #[DataProvider('permissionProvider')]
     public function testPermissionsWithGroup(array $acePermissions, int $permissionToTest, bool $expectedResult)
     {
         $userAce = $this->createAce(AccessControlEntry::TYPE_USER_VALUE, '123', 'pub', '42', []);

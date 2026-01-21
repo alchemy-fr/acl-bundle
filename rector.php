@@ -13,6 +13,7 @@ return RectorConfig::configure()
      ->withPhpSets(
          php84: true,
      )
+    ->withAttributesSets(all: true)
     ->withTypeCoverageLevel(0)
     ->withDeadCodeLevel(0)
     ->withCodeQualityLevel(0);
