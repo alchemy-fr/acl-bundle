@@ -9,6 +9,7 @@ use Alchemy\AclBundle\Model\AclUserInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 #[AutoconfigureTag(name: 'security.voter')]
@@ -33,7 +34,7 @@ class AclVoter extends Voter
         return is_a($subjectType, AclObjectInterface::class, true);
     }
 
-    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
+    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
     {
         $user = $token->getUser();
         if ($user instanceof AclUserInterface) {

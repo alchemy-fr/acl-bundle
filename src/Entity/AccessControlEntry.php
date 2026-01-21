@@ -9,70 +9,52 @@ use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * @ORM\Table(
- *     uniqueConstraints={@ORM\UniqueConstraint(name="uniq_ace", columns={"user_type", "user_id", "object_type", "object_id", "parent_id"})},
- *     indexes={
- *         @ORM\Index(name="user_idx", columns={"user_type", "user_id"}),
- *         @ORM\Index(name="object_idx", columns={"object_type", "object_id"}),
- *         @ORM\Index(name="user_type_idx", columns={"user_type"}),
- *         @ORM\Index(name="object_type_idx", columns={"object_type"}),
- *         @ORM\Index(name="parent_idx", columns={"parent_id"}),
- *     }
- * )
- * @ORM\Entity(repositoryClass="AccessControlEntryRepository")
- */
+#[ORM\Entity(repositoryClass: AccessControlEntryRepository::class)]
+#[ORM\Table]
+#[ORM\Index(name: 'user_idx', columns: ['user_type', 'user_id'])]
+#[ORM\Index(name: 'object_idx', columns: ['object_type', 'object_id'])]
+#[ORM\Index(name: 'user_type_idx', columns: ['user_type'])]
+#[ORM\Index(name: 'object_type_idx', columns: ['object_type'])]
+#[ORM\Index(name: 'parent_idx', columns: ['parent_id'])]
+#[ORM\UniqueConstraint(name: 'uniq_ace', columns: ['user_type', 'user_id', 'object_type', 'object_id', 'parent_id'])]
 class AccessControlEntry implements AccessControlEntryInterface
 {
     /**
      * @var Uuid
-     *
-     * @ORM\Id
-     * @ORM\Column(type="uuid", unique=true)
-     * @ORM\GeneratedValue(strategy="CUSTOM")
-     * @ORM\CustomIdGenerator(class="Ramsey\Uuid\Doctrine\UuidGenerator")
      */
+    #[ORM\Id]
+    #[ORM\Column(type: 'uuid', unique: true)]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: \Ramsey\Uuid\Doctrine\UuidGenerator::class)]
     protected $id;
 
-    /**
-     * @ORM\Column(type="smallint")
-     */
+    #[ORM\Column(type: 'smallint')]
     protected int $userType = self::TYPE_USER_VALUE;
 
-    /**
-     * @ORM\Column(type="string", length=36, nullable=true)
-     */
+    #[ORM\Column(type: 'string', length: 36, nullable: true)]
     protected ?string $userId = null;
 
     /**
      * The object type name (i.e. publication).
-     *
-     * @ORM\Column(type="string", length=20)
      */
     #[Assert\NotNull]
+    #[ORM\Column(type: 'string', length: 20)]
     protected ?string $objectType = null;
 
-    /**
-     * @ORM\Column(type="uuid", nullable=true)
-     */
+    #[ORM\Column(type: 'uuid', nullable: true)]
     protected ?string $objectId = null;
 
-    /**
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Column(type: 'integer')]
     protected int $mask = 0;
 
     /**
      * i.e. "p:b9ccf60e-9f08-4388-b703-2953c40cb0a7".
-     *
-     * @ORM\Column(type="string", length=39, nullable=true)
      */
+    #[ORM\Column(type: 'string', length: 39, nullable: true)]
     protected ?string $parentId = null;
 
-    /**
-     * @ORM\Column(type="datetime")
-     */
-    private \DateTime $createdAt;
+    #[ORM\Column(type: 'datetime')]
+    private readonly \DateTime $createdAt;
 
     public function __construct()
     {

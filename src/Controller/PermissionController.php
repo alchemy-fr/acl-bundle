@@ -23,7 +23,11 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class PermissionController extends AbstractController
 {
-    public function __construct(private readonly PermissionManager $permissionManager, private readonly EntityManagerInterface $em, private readonly ObjectMapping $objectMapping)
+    public function __construct(
+        private readonly PermissionManager $permissionManager,
+        private readonly EntityManagerInterface $em,
+        private readonly ObjectMapping $objectMapping,
+    )
     {
     }
 
@@ -95,7 +99,7 @@ class PermissionController extends AbstractController
 
         $aces = $repository->findAcesByParams($params);
 
-        return new JsonResponse(array_map(fn (AccessControlEntryInterface $ace): array => $aceSerializer->serialize($ace), $aces));
+        return new JsonResponse(array_map($aceSerializer->serialize(...), $aces));
     }
 
     #[Route(path: '/ace', name: 'ace_delete', methods: ['DELETE'])]
@@ -118,7 +122,7 @@ class PermissionController extends AbstractController
 
     private function getRequestData(Request $request): array
     {
-        if ('json' !== $request->getContentType() || empty($request->getContent())) {
+        if ('json' !== $request->getContentTypeFormat() || empty($request->getContent())) {
             if ('GET' === $request->getMethod()) {
                 return $request->query->all();
             }

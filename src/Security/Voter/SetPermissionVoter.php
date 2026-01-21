@@ -51,7 +51,7 @@ class SetPermissionVoter extends Voter
     /**
      * @param AclObjectInterface $subject
      */
-    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
+    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?\Symfony\Component\Security\Core\Authorization\Voter\Vote $vote = null): bool
     {
         if ($this->security->isGranted('ROLE_ADMIN')) {
             return true;
