@@ -26,17 +26,20 @@ class PermissionManager
     ) {
     }
 
-    public function isGranted(AclUserInterface $user, AclObjectInterface $object, int $permission): bool
+    public function isGranted(AclUserInterface $user, AclObjectInterface $object, array|int $permission): bool
     {
         if ($object->getAclOwnerId() === $user->getId()) {
             return true;
         }
 
         $aces = $this->getAces($user, $object);
+        $permissions = is_array($permission) ? $permission : [$permission];
 
         foreach ($aces as $ace) {
-            if (null !== $ace && ($ace->getMask() & $permission) === $permission) {
-                return true;
+            foreach ($permissions as $permission) {
+                if (null !== $ace && ($ace->getMask() & $permission) === $permission) {
+                    return true;
+                }
             }
         }
 
