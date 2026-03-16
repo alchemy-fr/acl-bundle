@@ -52,6 +52,10 @@ interface AccessControlEntryInterface
 
     public function resetPermissions(): void;
 
+    public function getMetadata(): array;
+
+    public function setMetadata(array $metadata): void;
+
     public function getParentId(): ?string;
 
     public function setParentId(?string $parentId): void;

@@ -46,7 +46,10 @@ class PermissionManager
         return false;
     }
 
-    private function getAces(AclUserInterface $user, AclObjectInterface $object): array
+    /**
+     * @return AccessControlEntryInterface[]
+     */
+    public function getAces(AclUserInterface $user, AclObjectInterface $object): array
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
         $key = $this->getCacheKey(AccessControlEntryInterface::TYPE_USER_VALUE, $user->getId(), $objectKey, $object->getId());
