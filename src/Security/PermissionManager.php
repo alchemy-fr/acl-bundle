@@ -26,9 +26,14 @@ class PermissionManager
     ) {
     }
 
-    public function isGranted(AclUserInterface $user, AclObjectInterface $object, array|int $permission): bool
+    public function resetCache(): void
     {
-        if ($object->getAclOwnerId() === $user->getId()) {
+        $this->cache = [];
+    }
+
+    public function isGranted(AclUserInterface $user, AclObjectInterface $object, array|int $permission, bool $ownershipGrants = true): bool
+    {
+        if ($ownershipGrants && $object->getAclOwnerId() === $user->getId()) {
             return true;
         }
 
