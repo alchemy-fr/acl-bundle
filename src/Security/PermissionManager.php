@@ -132,7 +132,7 @@ class PermissionManager
             $objectKey,
             $object->getId(),
             $permissions,
-            $parentId
+            parentId: $parentId
         );
     }
 
@@ -150,7 +150,7 @@ class PermissionManager
             $objectKey,
             $object->getId(),
             $permissions,
-            $parentId
+            parentId: $parentId
         );
     }
 
@@ -182,6 +182,7 @@ class PermissionManager
         string $objectType,
         ?string $objectId,
         int $permissions,
+        array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
     ): ?AccessControlEntryInterface {
@@ -191,6 +192,7 @@ class PermissionManager
             $objectType,
             $objectId,
             $permissions,
+            $metadata,
             $parentId,
             $append
         );

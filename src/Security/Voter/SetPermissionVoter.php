@@ -14,8 +14,8 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 #[AutoconfigureTag(name: 'security.voter')]
 class SetPermissionVoter extends Voter
 {
-    public const ACL_READ = 'ACL_READ';
-    public const ACL_WRITE = 'ACL_WRITE';
+    public const string ACL_READ = 'ACL_READ';
+    public const string ACL_WRITE = 'ACL_WRITE';
 
     public function __construct(private readonly Security $security)
     {

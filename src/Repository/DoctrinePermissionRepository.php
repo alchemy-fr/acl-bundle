@@ -114,6 +114,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         string $objectType,
         ?string $objectId,
         int $mask,
+        array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
     ): AccessControlEntryInterface {
@@ -134,6 +135,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         } else {
             $ace->setMask($mask);
         }
+        $ace->setMetadata($metadata);
 
         $this->em->persist($ace);
         $this->em->flush();
