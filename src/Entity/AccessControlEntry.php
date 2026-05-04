@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Alchemy\AclBundle\Entity;
 
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Ramsey\Uuid\Doctrine\UuidGenerator;
+use Ramsey\Uuid\Doctrine\UuidType;
 use Ramsey\Uuid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -23,43 +26,46 @@ class AccessControlEntry implements AccessControlEntryInterface
      * @var Uuid
      */
     #[ORM\Id]
-    #[ORM\Column(type: 'uuid', unique: true)]
+    #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: \Ramsey\Uuid\Doctrine\UuidGenerator::class)]
+    #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
     protected $id;
 
-    #[ORM\Column(type: 'smallint')]
+    #[ORM\Column(type: Types::SMALLINT)]
     protected int $userType = self::TYPE_USER_VALUE;
 
-    #[ORM\Column(type: 'string', length: 36, nullable: true)]
+    #[ORM\Column(type: Types::STRING, length: 36, nullable: true)]
     protected ?string $userId = null;
 
     /**
      * The object type name (i.e. publication).
      */
     #[Assert\NotNull]
-    #[ORM\Column(type: 'string', length: 20)]
+    #[ORM\Column(type: Types::STRING, length: 20)]
     protected ?string $objectType = null;
 
-    #[ORM\Column(type: 'uuid', nullable: true)]
+    #[ORM\Column(type: UuidType::NAME, nullable: true)]
     protected ?string $objectId = null;
 
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column(type: Types::INTEGER)]
     protected int $mask = 0;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    protected ?array $metadata = null;
 
     /**
      * i.e. "p:b9ccf60e-9f08-4388-b703-2953c40cb0a7".
      */
-    #[ORM\Column(type: 'string', length: 39, nullable: true)]
+    #[ORM\Column(type: Types::STRING, length: 39, nullable: true)]
     protected ?string $parentId = null;
 
-    #[ORM\Column(type: 'datetime')]
-    private readonly \DateTime $createdAt;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private readonly \DateTimeImmutable $createdAt;
 
     public function __construct()
     {
         $this->id = Uuid::uuid4();
-        $this->createdAt = new \DateTime();
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     public static function getUserTypeFromString(string $type): int
@@ -169,7 +175,7 @@ class AccessControlEntry implements AccessControlEntryInterface
         $this->mask = 0;
     }
 
-    public function getCreatedAt(): \DateTime
+    public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -192,5 +198,15 @@ class AccessControlEntry implements AccessControlEntryInterface
     public function setParentId(?string $parentId): void
     {
         $this->parentId = $parentId;
+    }
+
+    public function getMetadata(): array
+    {
+        return $this->metadata ?? [];
+    }
+
+    public function setMetadata(array $metadata): void
+    {
+        $this->metadata = $metadata;
     }
 }

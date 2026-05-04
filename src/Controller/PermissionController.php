@@ -62,12 +62,13 @@ class PermissionController extends AbstractController
         $userType = $data['userType'] ?? null;
         $userId = $data['userId'] ?? null;
         $mask = (int) ($data['mask'] ?? 0);
+        $metadata = (array) ($data['metadata'] ?? []);
 
         $objectId = !empty($objectId) ? $objectId : null;
 
         $userType = AccessControlEntry::getUserTypeFromString($userType);
 
-        $ace = $this->permissionManager->updateOrCreateAce($userType, $userId, $objectType, $objectId, $mask);
+        $ace = $this->permissionManager->updateOrCreateAce($userType, $userId, $objectType, $objectId, $mask, $metadata);
 
         return new JsonResponse($aceSerializer->serialize($ace));
     }

@@ -28,6 +28,7 @@ readonly class AceSerializer
             'objectId' => $ace->getObjectId(),
             'mask' => $ace->getMask(),
             'parentId' => $ace->getParentId(),
+            'metadata' => $ace->getMetadata(),
         ];
 
         if (null !== $userId) {

@@ -47,6 +47,7 @@ interface PermissionRepositoryInterface
         string $objectType,
         ?string $objectId,
         int $mask,
+        array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
     ): AccessControlEntryInterface;

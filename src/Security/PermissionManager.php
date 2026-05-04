@@ -26,9 +26,14 @@ class PermissionManager
     ) {
     }
 
-    public function isGranted(AclUserInterface $user, AclObjectInterface $object, array|int $permission): bool
+    public function resetCache(): void
     {
-        if ($object->getAclOwnerId() === $user->getId()) {
+        $this->cache = [];
+    }
+
+    public function isGranted(AclUserInterface $user, AclObjectInterface $object, array|int $permission, bool $ownershipGrants = true): bool
+    {
+        if ($ownershipGrants && $object->getAclOwnerId() === $user->getId()) {
             return true;
         }
 
@@ -46,7 +51,10 @@ class PermissionManager
         return false;
     }
 
-    private function getAces(AclUserInterface $user, AclObjectInterface $object): array
+    /**
+     * @return AccessControlEntryInterface[]
+     */
+    public function getAces(AclUserInterface $user, AclObjectInterface $object): array
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
         $key = $this->getCacheKey(AccessControlEntryInterface::TYPE_USER_VALUE, $user->getId(), $objectKey, $object->getId());
@@ -124,7 +132,7 @@ class PermissionManager
             $objectKey,
             $object->getId(),
             $permissions,
-            $parentId
+            parentId: $parentId
         );
     }
 
@@ -142,7 +150,7 @@ class PermissionManager
             $objectKey,
             $object->getId(),
             $permissions,
-            $parentId
+            parentId: $parentId
         );
     }
 
@@ -174,6 +182,7 @@ class PermissionManager
         string $objectType,
         ?string $objectId,
         int $permissions,
+        array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
     ): ?AccessControlEntryInterface {
@@ -183,6 +192,7 @@ class PermissionManager
             $objectType,
             $objectId,
             $permissions,
+            $metadata,
             $parentId,
             $append
         );

@@ -15,14 +15,15 @@ interface PermissionInterface
     public const int MASTER = 64;
     public const int OWNER = 128;
     public const int SHARE = 256;
-    public const int CHILD_CREATE = 512;
-    public const int CHILD_EDIT = 1024;
-    public const int CHILD_DELETE = 2048;
-    public const int CHILD_UNDELETE = 4096;
-    public const int CHILD_OPERATOR = 8192;
-    public const int CHILD_MASTER = 16384;
-    public const int CHILD_OWNER = 32768;
-    public const int CHILD_SHARE = 65536;
+    public const int CHILD_VIEW = 512;
+    public const int CHILD_CREATE = 1024;
+    public const int CHILD_EDIT = 2048;
+    public const int CHILD_DELETE = 4096;
+    public const int CHILD_UNDELETE = 8192;
+    public const int CHILD_OPERATOR = 16384;
+    public const int CHILD_MASTER = 32768;
+    public const int CHILD_OWNER = 65536;
+    public const int CHILD_SHARE = 131072;
 
     public const array PERMISSIONS = [
         'VIEW' => self::VIEW,
@@ -34,6 +35,7 @@ interface PermissionInterface
         'MASTER' => self::MASTER,
         'OWNER' => self::OWNER,
         'SHARE' => self::SHARE,
+        'CHILD_VIEW' => self::CHILD_VIEW,
         'CHILD_CREATE' => self::CHILD_CREATE,
         'CHILD_EDIT' => self::CHILD_EDIT,
         'CHILD_DELETE' => self::CHILD_DELETE,
