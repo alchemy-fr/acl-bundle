@@ -59,7 +59,7 @@ class AccessControlEntry implements AccessControlEntryInterface
     #[ORM\Column(type: Types::STRING, length: 39, nullable: true)]
     protected ?string $parentId = null;
 
-    #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private readonly \DateTimeImmutable $createdAt;
 
     public function __construct()
