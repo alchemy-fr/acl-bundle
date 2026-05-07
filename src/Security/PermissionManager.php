@@ -185,6 +185,7 @@ class PermissionManager
         array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
+        ?AccessControlEntryInterface &$previousAce = null,
     ): ?AccessControlEntryInterface {
         $ace = $this->repository->updateOrCreateAce(
             $userType,
@@ -194,12 +195,22 @@ class PermissionManager
             $permissions,
             $metadata,
             $parentId,
-            $append
+            $append,
+            $previousAce,
         );
 
         unset($this->cache[$this->getCacheKey($userType, $userId, $objectType, $objectId)]);
 
-        $this->eventDispatcher->dispatch(new AclUpsertEvent($userType, $userId, $objectType, $objectId, $permissions), AclUpsertEvent::NAME);
+        $this->eventDispatcher->dispatch(new AclUpsertEvent(
+            $userType,
+            $userId,
+            $objectType,
+            $objectId,
+            $permissions,
+            $metadata,
+            $previousAce?->getMask(),
+            $previousAce?->getMetadata()
+        ), AclUpsertEvent::NAME);
 
         return $ace;
     }

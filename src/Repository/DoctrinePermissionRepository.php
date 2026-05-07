@@ -117,6 +117,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
+        ?AccessControlEntryInterface &$previousAce = null,
     ): AccessControlEntryInterface {
         $ace = $this->findAce($userType, $userId, $objectType, $objectId, $parentId);
 
@@ -128,6 +129,8 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
             $ace->setObjectType($objectType);
             $ace->setObjectId($objectId);
             $ace->setParentId($parentId);
+        } else {
+            $previousAce = clone $ace;
         }
 
         if ($append) {

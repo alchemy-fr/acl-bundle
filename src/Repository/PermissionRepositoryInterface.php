@@ -50,6 +50,7 @@ interface PermissionRepositoryInterface
         array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
+        ?AccessControlEntryInterface &$previousAce = null,
     ): AccessControlEntryInterface;
 
     /**
