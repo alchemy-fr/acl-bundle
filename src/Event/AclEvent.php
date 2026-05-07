@@ -15,8 +15,7 @@ abstract class AclEvent extends Event
         protected readonly ?string $objectId,
         protected readonly ?int $previousPermissions,
         protected readonly ?array $previousMetadata,
-    )
-    {
+    ) {
     }
 
     public function getUserType(): int

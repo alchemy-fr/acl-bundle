@@ -17,8 +17,7 @@ class AclUpsertEvent extends AclEvent
         private readonly array $metadata,
         ?int $previousPermissions,
         ?array $previousMetadata,
-    )
-    {
+    ) {
         parent::__construct($userType, $userId, $objectType, $objectId, $previousPermissions, $previousMetadata);
     }
 
