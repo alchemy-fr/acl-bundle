@@ -6,5 +6,5 @@ namespace Alchemy\AclBundle\Event;
 
 class AclDeleteEvent extends AclEvent
 {
-    public const NAME = 'acl.delete';
+    public const string NAME = 'acl.delete';
 }

@@ -8,7 +8,14 @@ use Symfony\Contracts\EventDispatcher\Event;
 
 abstract class AclEvent extends Event
 {
-    public function __construct(protected int $userType, protected ?string $userId, protected string $objectType, protected ?string $objectId)
+    public function __construct(
+        protected readonly int $userType,
+        protected readonly ?string $userId,
+        protected readonly string $objectType,
+        protected readonly ?string $objectId,
+        protected readonly ?int $previousPermissions,
+        protected readonly ?array $previousMetadata,
+    )
     {
     }
 
@@ -27,18 +34,18 @@ abstract class AclEvent extends Event
         return $this->objectType;
     }
 
-    public function setObjectType(string $objectType): void
-    {
-        $this->objectType = $objectType;
-    }
-
     public function getObjectId(): ?string
     {
         return $this->objectId;
     }
 
-    public function setObjectId(?string $objectId): void
+    public function getPreviousPermissions(): ?int
     {
-        $this->objectId = $objectId;
+        return $this->previousPermissions;
+    }
+
+    public function getPreviousMetadata(): ?array
+    {
+        return $this->previousMetadata;
     }
 }

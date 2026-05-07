@@ -152,6 +152,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         string $objectType,
         ?string $objectId,
         ?string $parentId = null,
+        ?AccessControlEntryInterface &$previousAce = null,
     ): bool {
         $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
 
@@ -165,6 +166,7 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
             ]);
 
         if ($ace instanceof AccessControlEntry) {
+            $previousAce = $ace;
             $this->em->remove($ace);
             $this->em->flush();
 

@@ -6,7 +6,7 @@ namespace Alchemy\AclBundle\Event;
 
 class AclUpsertEvent extends AclEvent
 {
-    public const NAME = 'acl.upsert';
+    public const string NAME = 'acl.upsert';
 
     public function __construct(
         int $userType,
@@ -15,11 +15,11 @@ class AclUpsertEvent extends AclEvent
         ?string $objectId,
         private readonly int $permissions,
         private readonly array $metadata,
-        private readonly ?int $previousPermissions,
-        private readonly ?array $previousMetadata,
+        ?int $previousPermissions,
+        ?array $previousMetadata,
     )
     {
-        parent::__construct($userType, $userId, $objectType, $objectId);
+        parent::__construct($userType, $userId, $objectType, $objectId, $previousPermissions, $previousMetadata);
     }
 
     public function getPermissions(): int
@@ -27,18 +27,8 @@ class AclUpsertEvent extends AclEvent
         return $this->permissions;
     }
 
-    public function getPreviousPermissions(): ?int
-    {
-        return $this->previousPermissions;
-    }
-
     public function getMetadata(): array
     {
         return $this->metadata;
-    }
-
-    public function getPreviousMetadata(): ?array
-    {
-        return $this->previousMetadata;
     }
 }

@@ -232,9 +232,17 @@ class PermissionManager
             $userId,
             $objectType,
             $objectId,
-            $parentId
+            $parentId,
+            $previousAce,
         )) {
-            $this->eventDispatcher->dispatch(new AclDeleteEvent($userType, $userId, $objectType, $objectId), AclDeleteEvent::NAME);
+            $this->eventDispatcher->dispatch(new AclDeleteEvent(
+                $userType,
+                $userId,
+                $objectType,
+                $objectId,
+                $previousAce->getMask(),
+                $previousAce->getMetadata(),
+            ), AclDeleteEvent::NAME);
         }
 
         unset($this->cache[$this->getCacheKey($userType, $userId, $objectType, $objectId)]);

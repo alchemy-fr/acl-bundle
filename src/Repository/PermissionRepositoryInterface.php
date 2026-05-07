@@ -62,5 +62,6 @@ interface PermissionRepositoryInterface
         string $objectType,
         ?string $objectId,
         ?string $parentId = null,
+        ?AccessControlEntryInterface &$previousAce = null,
     ): bool;
 }
