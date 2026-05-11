@@ -14,7 +14,7 @@
     "symfony/framework-bundle": "^6.4|^7.4",
     "symfony/security-bundle": "^6.4|^7.4",
     "symfony/validator": "^6.4|^7.4",
-    "symfony/yaml": "6.4|^7.4"
+    "symfony/yaml": "^6.4|^7.4"
   },
   "config": {
     "sort-packages": true
