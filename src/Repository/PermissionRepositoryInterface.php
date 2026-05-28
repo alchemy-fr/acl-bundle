@@ -50,6 +50,7 @@ interface PermissionRepositoryInterface
         array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
+        ?AccessControlEntryInterface &$previousAce = null,
     ): AccessControlEntryInterface;
 
     /**
@@ -61,5 +62,6 @@ interface PermissionRepositoryInterface
         string $objectType,
         ?string $objectId,
         ?string $parentId = null,
+        ?AccessControlEntryInterface &$previousAce = null,
     ): bool;
 }

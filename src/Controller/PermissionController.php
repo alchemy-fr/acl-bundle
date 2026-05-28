@@ -27,8 +27,7 @@ class PermissionController extends AbstractController
         private readonly PermissionManager $permissionManager,
         private readonly EntityManagerInterface $em,
         private readonly ObjectMapping $objectMapping,
-    )
-    {
+    ) {
     }
 
     private function validateAuthorization(string $attribute, Request $request): array
