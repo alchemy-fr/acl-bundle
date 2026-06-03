@@ -104,7 +104,7 @@ class AccessControlEntryRepository extends EntityRepository
         ] as $col => $alias) {
             if (isset($params[$col])) {
                 $queryBuilder
-                    ->andWhere(sprintf('a.%s = :%s', $col, $alias))
+                    ->andWhere(sprintf('a.%1$s = :%2$s'.(($params[$col.'Wildcard'] ?? false) ? ' OR a.%1$s IS NULL' : ''), $col, $alias))
                     ->setParameter($alias, $params[$col]);
             }
         }

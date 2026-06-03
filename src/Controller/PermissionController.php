@@ -80,12 +80,22 @@ class PermissionController extends AbstractController
     ): Response {
         $this->validateAuthorization(SetPermissionVoter::ACL_READ, $request);
 
-        $params = [
-            'objectType' => $request->query->get('objectType', false),
-            'objectId' => $request->query->get('objectId', false),
-            'userType' => $request->query->get('userType', false),
-            'userId' => $request->query->get('userId', false),
+        $queryKeys = [
+            'objectType',
+            'objectId',
+            'userType',
+            'userId',
+            'userIdWildcard',
+            'objectIdWildcard',
         ];
+
+        $params = array_combine(
+            $queryKeys,
+            array_map(
+                fn (string $key) => $request->query->get($key, false),
+                $queryKeys
+            )
+        );
 
         $params = array_filter($params, fn ($entry): bool => false !== $entry);
         $params = array_map(fn ($p): ?string => '' === $p || 'null' === $p ? null : $p, $params);
