@@ -8,8 +8,10 @@ use Alchemy\AclBundle\AclObjectInterface;
 
 class ObjectMock implements AclObjectInterface
 {
-    public function __construct(private readonly string $id)
-    {
+    public function __construct(
+        private readonly string $id,
+        private readonly string $aclOwnerId = '',
+    ) {
     }
 
     public function getId(): string
@@ -19,6 +21,6 @@ class ObjectMock implements AclObjectInterface
 
     public function getAclOwnerId(): string
     {
-        return '';
+        return $this->aclOwnerId;
     }
 }
