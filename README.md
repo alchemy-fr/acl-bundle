@@ -61,6 +61,13 @@ In this application, `objectType` can be either `publication` or `asset`.
 
 - `objectId`
 If the value is NULL, then the ACE is apply to all objects of this `objectType`.
+
+### Authorization
+
+Outside of `ROLE_ADMIN`, the endpoints ask the application voters for `ACL_READ` or
+`ACL_WRITE` on the object. When `objectId` is empty, there is no object: the subject
+voted on is an `Alchemy\AclBundle\Security\ObjectTypeSubject` carrying the
+`objectType` and its class name. No voter granting it means access denied.
   
 
 ### Endpoints
