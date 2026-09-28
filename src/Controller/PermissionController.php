@@ -9,6 +9,7 @@ use Alchemy\AclBundle\Entity\AccessControlEntry;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Model\AccessControlEntryInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
+use Alchemy\AclBundle\Security\ObjectTypeSubject;
 use Alchemy\AclBundle\Security\PermissionManager;
 use Alchemy\AclBundle\Security\Voter\SetPermissionVoter;
 use Alchemy\AclBundle\Serializer\AceSerializer;
@@ -37,8 +38,20 @@ class PermissionController extends AbstractController
             return $data;
         }
 
-        if (!empty($data['objectType']) && !empty($data['objectId'])) {
-            $object = $this->em->find($this->objectMapping->getClassName($data['objectType']), $data['objectId']);
+        if (!empty($data['objectType'])) {
+            $className = $this->objectMapping->getClassName($data['objectType']);
+
+            // No object id: the ACE applies to every object of the type, the voters
+            // decide on the type itself.
+            if (empty($data['objectId'])) {
+                if ($this->isGranted($attribute, new ObjectTypeSubject($data['objectType'], $className))) {
+                    return $data;
+                }
+
+                throw new AccessDeniedHttpException();
+            }
+
+            $object = $this->em->find($className, $data['objectId']);
 
             if (
                 $object instanceof AclObjectInterface
