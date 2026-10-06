@@ -15,7 +15,7 @@ class ObjectTypeFormType extends AbstractType
     {
     }
 
-    public function configureOptions(OptionsResolver $resolver)
+    public function configureOptions(OptionsResolver $resolver): void
     {
         $choices = [];
         foreach ($this->objectMapping->getObjectTypes() as $name) {
@@ -27,7 +27,7 @@ class ObjectTypeFormType extends AbstractType
         ]);
     }
 
-    public function getParent()
+    public function getParent(): ?string
     {
         return ChoiceType::class;
     }
