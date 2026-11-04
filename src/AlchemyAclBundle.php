@@ -19,7 +19,6 @@ use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
-use Symfony\Component\Yaml\Parser;
 
 class AlchemyAclBundle extends AbstractBundle
 {
@@ -49,16 +48,6 @@ class AlchemyAclBundle extends AbstractBundle
                 ->end()
             ->end()
         ;
-    }
-
-    public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
-    {
-        $bundles = $builder->getParameter('kernel.bundles');
-
-        if (isset($bundles['EasyAdminBundle'])) {
-            $data = (new Parser())->parse(file_get_contents(__DIR__.'/../config/easy_admin_entities.yaml'));
-            $builder->prependExtensionConfig('easy_admin', $data['easy_admin']);
-        }
     }
 
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void

@@ -20,7 +20,6 @@ use Alchemy\AclBundle\Tests\Mock\ObjectMock;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 
 class AlchemyAclBundleTest extends TestCase
 {
@@ -107,29 +106,6 @@ class AlchemyAclBundleTest extends TestCase
         $this->expectException(InvalidConfigurationException::class);
 
         $this->load(['unknown' => true]);
-    }
-
-    public function testEasyAdminConfigIsPrependedWhenTheBundleIsInstalled(): void
-    {
-        $container = $this->createContainer(['EasyAdminBundle' => 'EasyCorp\Bundle\EasyAdminBundle\EasyAdminBundle']);
-
-        $extension = (new AlchemyAclBundle())->getContainerExtension();
-        $this->assertInstanceOf(PrependExtensionInterface::class, $extension);
-        $extension->prepend($container);
-
-        $configs = $container->getExtensionConfig('easy_admin');
-        $this->assertCount(1, $configs);
-        $this->assertArrayHasKey('AccessControlEntry', $configs[0]['entities']);
-        $this->assertSame('Alchemy\AclBundle\Entity\AccessControlEntry', $configs[0]['entities']['AccessControlEntry']['class']);
-    }
-
-    public function testNothingIsPrependedWithoutEasyAdmin(): void
-    {
-        $container = $this->createContainer([]);
-
-        (new AlchemyAclBundle())->getContainerExtension()->prepend($container);
-
-        $this->assertSame([], $container->getExtensionConfig('easy_admin'));
     }
 
     private function load(array $config): ContainerBuilder

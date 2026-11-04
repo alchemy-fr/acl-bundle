@@ -451,10 +451,7 @@ a `403`.
 
 ## Admin UI (EasyAdmin)
 
-When `EasyAdminBundle` is installed the bundle prepends an `AccessControlEntry` entity to
-the EasyAdmin configuration, so ACEs can be browsed and edited like any other entity.
-
-The bundle also ships templates to manage the permissions of one object or of a whole
+The bundle ships templates to manage the permissions of one object or of a whole
 type with a checkbox matrix (`@AlchemyAcl/permissions/entity/acl.html.twig` and
 `@AlchemyAcl/permissions/global/acl.html.twig`). They call the API through the admin
 routes, which you import next to your admin area:
