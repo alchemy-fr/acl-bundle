@@ -41,13 +41,16 @@ interface PermissionRepositoryInterface
         string $objectId,
     ): array;
 
+    /**
+     * @param array|null $metadata null keeps the metadata of an existing ACE
+     */
     public function updateOrCreateAce(
         int $userType,
         string $userId,
         string $objectType,
         ?string $objectId,
         int $mask,
-        array $metadata = [],
+        ?array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
         ?AccessControlEntryInterface &$previousAce = null,

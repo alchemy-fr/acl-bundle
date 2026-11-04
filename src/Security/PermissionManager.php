@@ -176,13 +176,16 @@ class PermissionManager
         return $this->repository->findAces($userType, $userId, $objectType, $objectId);
     }
 
+    /**
+     * @param array|null $metadata null keeps the metadata of an existing ACE
+     */
     public function updateOrCreateAce(
         int $userType,
         string $userId,
         string $objectType,
         ?string $objectId,
         int $permissions,
-        array $metadata = [],
+        ?array $metadata = [],
         ?string $parentId = null,
         bool $append = false,
         ?AccessControlEntryInterface &$previousAce = null,
@@ -207,7 +210,7 @@ class PermissionManager
             $objectType,
             $objectId,
             $permissions,
-            $metadata,
+            $metadata ?? $ace->getMetadata(),
             $previousAce?->getMask(),
             $previousAce?->getMetadata()
         ), AclUpsertEvent::NAME);
