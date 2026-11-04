@@ -74,7 +74,8 @@ class PermissionController extends AbstractController
         $userType = $data['userType'] ?? null;
         $userId = $data['userId'] ?? null;
         $mask = (int) ($data['mask'] ?? 0);
-        $metadata = (array) ($data['metadata'] ?? []);
+        // Clients which do not handle the metadata (e.g. the EasyAdmin editor) must not erase them
+        $metadata = array_key_exists('metadata', $data) ? (array) ($data['metadata'] ?? []) : null;
 
         $objectId = !empty($objectId) ? $objectId : null;
 

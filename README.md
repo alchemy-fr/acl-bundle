@@ -279,7 +279,7 @@ $permissionManager->updateOrCreateAce(
     'publication',
     null,                        // every publication
     PermissionInterface::VIEW,
-    metadata: ['granted_by' => $adminId],
+    metadata: ['granted_by' => $adminId], // null keeps the metadata of an existing ACE
     append: true,                // keep the bits already set
 );
 
@@ -363,7 +363,7 @@ The examples below assume the routes were imported under `/permissions`.
 | `objectType` | One of the keys declared in `alchemy_acl.objects`                                            |
 | `objectId`   | The object ID. `null` or empty targets every object of the type.                             |
 | `mask`       | The sum of the granted permission bits                                                       |
-| `metadata`   | Free JSON object stored with the ACE (optional)                                              |
+| `metadata`   | Free JSON object stored with the ACE (optional: when omitted, an existing ACE keeps its own) |
 | `parentId`   | Optional discriminator, see [Managing ACEs from PHP](#managing-aces-from-php)                |
 
 Responses are serialized ACEs. When the ACE targets a specific user or group, the payload

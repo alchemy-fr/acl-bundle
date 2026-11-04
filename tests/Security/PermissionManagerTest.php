@@ -233,7 +233,7 @@ class PermissionManagerTest extends TestCase
         $this->repository
             ->expects($this->once())
             ->method('updateOrCreateAce')
-            ->willReturnCallback(function (int $userType, ?string $userId, string $objectType, ?string $objectId, int $mask, array $metadata, ?string $parentId, bool $append, &$previousAce) use ($previous, $updated) {
+            ->willReturnCallback(function (int $userType, ?string $userId, string $objectType, ?string $objectId, int $mask, ?array $metadata, ?string $parentId, bool $append, &$previousAce) use ($previous, $updated) {
                 $previousAce = $previous;
 
                 return $updated;
@@ -269,6 +269,29 @@ class PermissionManagerTest extends TestCase
         $this->assertSame(['v' => 2], $dispatched->getMetadata());
         $this->assertSame(PermissionInterface::VIEW, $dispatched->getPreviousPermissions());
         $this->assertSame(['v' => 1], $dispatched->getPreviousMetadata());
+    }
+
+    public function testUpdateOrCreateAceWithoutMetadataKeepsThoseOfTheAce(): void
+    {
+        $ace = $this->createAce(PermissionInterface::EDIT);
+        $ace->setMetadata(['v' => 1]);
+
+        $this->repository
+            ->expects($this->once())
+            ->method('updateOrCreateAce')
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', '42', PermissionInterface::EDIT, null)
+            ->willReturn($ace);
+
+        $this->eventDispatcher
+            ->expects($this->once())
+            ->method('dispatch')
+            ->with($this->callback(function (AclUpsertEvent $event): bool {
+                $this->assertSame(['v' => 1], $event->getMetadata());
+
+                return true;
+            }), AclUpsertEvent::NAME);
+
+        $this->manager->updateOrCreateAce(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', '42', PermissionInterface::EDIT, null);
     }
 
     public function testUpdateOrCreateAceOfANewAceHasNoPreviousState(): void

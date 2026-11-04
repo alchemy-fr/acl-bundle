@@ -99,7 +99,7 @@ class PermissionControllerTest extends TestCase
         $this->permissionManager
             ->expects($this->once())
             ->method('updateOrCreateAce')
-            ->with(AccessControlEntryInterface::TYPE_GROUP_VALUE, 'g-1', 'pub', null, PermissionInterface::VIEW, [])
+            ->with(AccessControlEntryInterface::TYPE_GROUP_VALUE, 'g-1', 'pub', null, PermissionInterface::VIEW, null)
             ->willReturn($this->createAce());
 
         $this->controller->setAce($this->jsonRequest('PUT', [
@@ -118,7 +118,7 @@ class PermissionControllerTest extends TestCase
         $this->permissionManager
             ->expects($this->once())
             ->method('updateOrCreateAce')
-            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', 'pub-42', 7, [])
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', 'pub-42', 7, null)
             ->willReturn($this->createAce());
 
         $request = Request::create('/permissions/ace', 'PUT', [
@@ -130,6 +130,26 @@ class PermissionControllerTest extends TestCase
         ]);
 
         $this->controller->setAce($request, $this->serializer);
+    }
+
+    public function testSetAceWithAnEmptyMetadataClearsThem(): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+
+        $this->permissionManager
+            ->expects($this->once())
+            ->method('updateOrCreateAce')
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', 'pub-42', PermissionInterface::VIEW, [])
+            ->willReturn($this->createAce());
+
+        $this->controller->setAce($this->jsonRequest('PUT', [
+            'userType' => 'user',
+            'userId' => 'u-1',
+            'objectType' => 'pub',
+            'objectId' => 'pub-42',
+            'mask' => PermissionInterface::VIEW,
+            'metadata' => [],
+        ]), $this->serializer);
     }
 
     public function testOwnerOfTheObjectCanSetAnAce(): void
@@ -215,7 +235,7 @@ class PermissionControllerTest extends TestCase
         $this->permissionManager
             ->expects($this->once())
             ->method('updateOrCreateAce')
-            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', null, PermissionInterface::VIEW, [])
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', null, PermissionInterface::VIEW, null)
             ->willReturn($this->createAce());
 
         $this->controller->setAce($this->jsonRequest('PUT', [
