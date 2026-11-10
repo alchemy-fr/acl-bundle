@@ -14,7 +14,7 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AccessControlEntryRepository::class)]
-#[ORM\Table]
+#[ORM\Table(name: 'access_control_entry')]
 #[ORM\Index(name: 'user_idx', columns: ['user_type', 'user_id'])]
 #[ORM\Index(name: 'object_idx', columns: ['object_type', 'object_id'])]
 #[ORM\Index(name: 'user_type_idx', columns: ['user_type'])]
@@ -27,44 +27,44 @@ class AccessControlEntry implements AccessControlEntryInterface
      * @var Uuid
      */
     #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
+    #[ORM\Column(name: 'id', type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: UuidGenerator::class)]
     protected $id;
 
-    #[ORM\Column(type: Types::SMALLINT)]
+    #[ORM\Column(name: 'user_type', type: Types::SMALLINT)]
     protected int $userType = self::TYPE_USER_VALUE;
 
-    #[ORM\Column(type: Types::STRING, length: 36, nullable: true)]
+    #[ORM\Column(name: 'user_id', type: Types::STRING, length: 36, nullable: true)]
     protected ?string $userId = null;
 
     /**
      * The object type name (i.e. publication).
      */
     #[Assert\NotNull]
-    #[ORM\Column(type: Types::STRING, length: 20)]
+    #[ORM\Column(name: 'object_type', type: Types::STRING, length: 20)]
     protected ?string $objectType = null;
 
     /**
      * Holds the UuidInterface hydrated by Doctrine until it is set: the unit of work
      * compares the property with the value it hydrated, a string would always differ.
      */
-    #[ORM\Column(type: UuidType::NAME, nullable: true)]
+    #[ORM\Column(name: 'object_id', type: UuidType::NAME, nullable: true)]
     protected UuidInterface|string|null $objectId = null;
 
-    #[ORM\Column(type: Types::INTEGER)]
+    #[ORM\Column(name: 'mask', type: Types::INTEGER)]
     protected int $mask = 0;
 
-    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[ORM\Column(name: 'metadata', type: Types::JSON, nullable: true)]
     protected ?array $metadata = null;
 
     /**
      * i.e. "p:b9ccf60e-9f08-4388-b703-2953c40cb0a7".
      */
-    #[ORM\Column(type: Types::STRING, length: 39, nullable: true)]
+    #[ORM\Column(name: 'parent_id', type: Types::STRING, length: 39, nullable: true)]
     protected ?string $parentId = null;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private readonly \DateTimeImmutable $createdAt;
 
     public function __construct()

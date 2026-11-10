@@ -9,7 +9,6 @@ use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Mapping\UnderscoreNamingStrategy;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\ORM\Tools\SchemaTool;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
@@ -17,7 +16,8 @@ use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Doctrine\UuidType;
 
 /**
- * Runs the entity mapping against an in-memory SQLite database.
+ * Runs the entity mapping against an in-memory SQLite database, with Doctrine's default
+ * naming strategy: the mapping must not depend on the one the application configures.
  */
 #[RequiresPhpExtension('pdo_sqlite')]
 class AccessControlEntryMappingTest extends TestCase
@@ -33,13 +33,23 @@ class AccessControlEntryMappingTest extends TestCase
         }
 
         $config = ORMSetup::createAttributeMetadataConfig([__DIR__.'/../../src/Entity'], true);
-        $config->setNamingStrategy(new UnderscoreNamingStrategy(CASE_LOWER, true));
         if (method_exists($config, 'enableNativeLazyObjects')) {
             $config->enableNativeLazyObjects(true);
         }
 
         $this->em = new EntityManager(DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true], $config), $config);
         new SchemaTool($this->em)->createSchema([$this->em->getClassMetadata(AccessControlEntry::class)]);
+    }
+
+    public function testTheTableAndColumnNamesDoNotDependOnTheNamingStrategy(): void
+    {
+        $metadata = $this->em->getClassMetadata(AccessControlEntry::class);
+
+        $this->assertSame('access_control_entry', $metadata->getTableName());
+        $this->assertSame(
+            ['id', 'user_type', 'user_id', 'object_type', 'object_id', 'mask', 'metadata', 'parent_id', 'created_at'],
+            array_values($metadata->getColumnNames()),
+        );
     }
 
     public function testALoadedAceIsNotScheduledForUpdate(): void
