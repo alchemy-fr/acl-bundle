@@ -45,7 +45,7 @@ class PermissionController extends AbstractController
         // Clients which do not handle the metadata (e.g. the EasyAdmin editor) must not erase them
         $metadata = array_key_exists('metadata', $data) ? $this->readMetadata($data['metadata']) : null;
 
-        $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $key['objectType'], $key['objectId']);
+        $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $key['objectType'], $key['objectId'], $key['parentId']);
 
         $ace = $this->permissionManager->updateOrCreateAce(
             $key['userType'],
@@ -121,7 +121,7 @@ class PermissionController extends AbstractController
     {
         $key = $this->readAceKey($this->getRequestData($request));
 
-        $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $key['objectType'], $key['objectId']);
+        $this->validateAuthorization(SetPermissionVoter::ACL_WRITE, $key['objectType'], $key['objectId'], $key['parentId']);
 
         $this->permissionManager->deleteAce(
             $key['userType'],
@@ -134,13 +134,15 @@ class PermissionController extends AbstractController
         return new JsonResponse(true);
     }
 
-    private function validateAuthorization(string $attribute, ?string $objectType, ?string $objectId): void
+    private function validateAuthorization(string $attribute, ?string $objectType, ?string $objectId, ?string $parentId = null): void
     {
         if ($this->isGranted('ROLE_ADMIN')) {
             return;
         }
 
-        if (null === $objectType) {
+        // The ACEs with a parentId belong to the application's own sources (e.g. a collection
+        // sharing its assets): a user allowed to share the object must not forge or delete them
+        if (null === $objectType || null !== $parentId) {
             throw new AccessDeniedHttpException();
         }
 

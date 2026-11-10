@@ -182,6 +182,34 @@ class PermissionControllerTest extends TestCase
         $this->controller->setAce($this->jsonRequest('PUT', $this->userAceBody()), $this->serializer);
     }
 
+    public function testANonAdminCannotSetAnAceWithAParentId(): void
+    {
+        $object = new ObjectMock(self::OBJECT_ID, 'u-1');
+        $this->em->method('find')->with(ObjectMock::class, self::OBJECT_ID)->willReturn($object);
+        $this->authorizationChecker
+            ->method('isGranted')
+            ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_WRITE === $attribute && $subject === $object);
+        $this->permissionManager->expects($this->never())->method('updateOrCreateAce');
+
+        $this->expectException(AccessDeniedHttpException::class);
+
+        $this->controller->setAce($this->jsonRequest('PUT', array_merge($this->userAceBody(), ['parentId' => 'p:1'])), $this->serializer);
+    }
+
+    public function testANonAdminCannotDeleteAnAceWithAParentId(): void
+    {
+        $object = new ObjectMock(self::OBJECT_ID, 'u-1');
+        $this->em->method('find')->with(ObjectMock::class, self::OBJECT_ID)->willReturn($object);
+        $this->authorizationChecker
+            ->method('isGranted')
+            ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_WRITE === $attribute && $subject === $object);
+        $this->permissionManager->expects($this->never())->method('deleteAce');
+
+        $this->expectException(AccessDeniedHttpException::class);
+
+        $this->controller->deleteAce($this->jsonRequest('DELETE', array_merge($this->userAceBody(), ['parentId' => 'p:1'])));
+    }
+
     public function testSetAceIsDeniedWhenTheVotersDeny(): void
     {
         $this->em->method('find')->willReturn(new ObjectMock(self::OBJECT_ID, 'someone-else'));
