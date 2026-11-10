@@ -4,7 +4,7 @@
 {% block head_stylesheets %}
     {{ parent() }}
     <style>
-        {% include '@AlchemyAcl/permissions/style.css' %}
+        {% include '@AlchemyAcl/easyadmin3/style.css' %}
     </style>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet"
           integrity="sha384-KZO2FRYNmIHerhfYMjCIUaJeGBRXP7CN24SiNSG+wdDzgwvxWbl16wMVtWiJTcMt" crossorigin="anonymous"/>
@@ -22,8 +22,10 @@
 {% endblock %}
 
 {% block content_title %}
-    <a href="{{ back_url }}">Back</a>
-    |
+    {% if back_url is defined and back_url %}
+        <a href="{{ back_url }}">Back</a>
+        |
+    {% endif %}
     Manage permissions for <b>{{ object_type }} {{ object_title }}</b> #{{ object_id }}
 {% endblock %}
 
