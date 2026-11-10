@@ -92,7 +92,7 @@ class PermissionController extends AbstractController
         PermissionRepositoryInterface $repository,
         AceSerializer $aceSerializer,
     ): Response {
-        $this->validateAuthorization(SetPermissionVoter::ACL_READ, $request);
+        $data = $this->validateAuthorization(SetPermissionVoter::ACL_READ, $request);
 
         $queryKeys = [
             'objectType',
@@ -113,6 +113,12 @@ class PermissionController extends AbstractController
 
         $params = array_filter($params, fn ($entry): bool => false !== $entry);
         $params = array_map(fn ($p): ?string => '' === $p || 'null' === $p ? null : $p, $params);
+
+        // A non-admin may only list the ACEs of the object (or type-wide ACEs) the authorization was checked on
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $params['objectType'] = (string) $data['objectType'];
+            $params['objectId'] = !empty($data['objectId']) ? (string) $data['objectId'] : null;
+        }
 
         if (!empty($params['userType'])) {
             $params['userType'] = AccessControlEntryInterface::USER_TYPES[$params['userType']] ?? false;
@@ -146,11 +152,12 @@ class PermissionController extends AbstractController
 
     private function getRequestData(Request $request): array
     {
-        if ('json' !== $request->getContentTypeFormat() || empty($request->getContent())) {
-            if ('GET' === $request->getMethod()) {
-                return $request->query->all();
-            }
+        // The filters of a GET are read from the query string: a body must not be authorized in their place
+        if ('GET' === $request->getMethod()) {
+            return $request->query->all();
+        }
 
+        if ('json' !== $request->getContentTypeFormat() || empty($request->getContent())) {
             return $request->request->all();
         }
 
