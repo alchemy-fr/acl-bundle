@@ -449,8 +449,10 @@ class ObjectTypeAclVoter extends Voter
 }
 ```
 
-Requests with an unknown `objectType` or an invalid `userType` get a `400`, denied requests
-a `403`.
+Invalid requests get a `400` before any authorization check: an unknown `objectType`, an
+`objectId` which is not a UUID, a missing or unknown `userType`, a missing `userId`, a
+`mask` which is not a non-negative integer or a `metadata` which is not an object. Denied
+requests get a `403`.
 
 ## Admin UI (EasyAdmin)
 
