@@ -110,11 +110,15 @@
                 <tr class="acl-{{ ace.userType }}{{ ace.wildcard ? ' acl-wildcard' }}{{ ace.inherited ? ' acl-inherited' }}"
                     data-acl-user-type="{{ ace.userType }}"
                     data-acl-user-id="{{ ace.userId }}"
+                    data-acl-parent-id="{{ ace.parentId }}"
                     data-acl-mask="{{ ace.mask }}">
                     <td class="acl-name">
                         {{ ace.name }}
                         {% if ace.inherited %}
                             <twig:ea:Badge>on all {{ object_type }}</twig:ea:Badge>
+                        {% endif %}
+                        {% if ace.parentId is not null %}
+                            <twig:ea:Badge>via {{ ace.parentId }}</twig:ea:Badge>
                         {% endif %}
                     </td>
                     {% for name, value in permissions %}

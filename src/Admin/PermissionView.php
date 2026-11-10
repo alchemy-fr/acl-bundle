@@ -58,6 +58,7 @@ class PermissionView
             'aces' => array_map(fn (AccessControlEntryInterface $ace): array => [
                 'userType' => $ace->getUserTypeString(),
                 'userId' => $ace->getUserId() ?? AccessControlEntryInterface::USER_WILDCARD,
+                'parentId' => $ace->getParentId(),
                 'name' => $this->resolveName($ace, $users, $groups),
                 'wildcard' => null === $ace->getUserId(),
                 'inherited' => null !== $id && null === $ace->getObjectId(),

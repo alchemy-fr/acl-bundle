@@ -52,6 +52,7 @@ class PermissionViewTest extends TestCase
         $typeWideAce = $this->createAce(AccessControlEntryInterface::TYPE_USER_VALUE, null, null, PermissionInterface::VIEW);
         $userAce = $this->createAce(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', '42', PermissionInterface::VIEW | PermissionInterface::EDIT);
         $groupAce = $this->createAce(AccessControlEntryInterface::TYPE_GROUP_VALUE, 'g-1', '42', PermissionInterface::EDIT | PermissionInterface::DELETE);
+        $groupAce->setParentId('p-1');
 
         $this->repository
             ->expects($this->exactly(2))
@@ -82,6 +83,7 @@ class PermissionViewTest extends TestCase
             [
                 'userType' => 'user',
                 'userId' => AccessControlEntryInterface::USER_WILDCARD,
+                'parentId' => null,
                 'name' => 'All users',
                 'wildcard' => true,
                 'inherited' => true,
@@ -91,6 +93,7 @@ class PermissionViewTest extends TestCase
             [
                 'userType' => 'user',
                 'userId' => 'u-1',
+                'parentId' => null,
                 'name' => 'alice',
                 'wildcard' => false,
                 'inherited' => false,
@@ -100,6 +103,7 @@ class PermissionViewTest extends TestCase
             [
                 'userType' => 'group',
                 'userId' => 'g-1',
+                'parentId' => 'p-1',
                 'name' => 'editors',
                 'wildcard' => false,
                 'inherited' => false,

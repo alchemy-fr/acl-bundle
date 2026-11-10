@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
             objectId,
             userType: row.dataset.aclUserType,
             userId: row.dataset.aclUserId,
+            parentId: row.dataset.aclParentId || null,
         };
     }
 
@@ -51,7 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function isGranted(userType, userId) {
         return [...tbody.querySelectorAll('tr:not(.acl-inherited)')].some(row => row.dataset.aclUserType === userType
-            && row.dataset.aclUserId === userId);
+            && row.dataset.aclUserId === userId
+            && !row.dataset.aclParentId);
     }
 
     root.addEventListener('change', event => {
