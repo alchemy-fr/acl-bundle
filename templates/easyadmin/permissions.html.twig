@@ -109,7 +109,8 @@
             {% for ace in aces %}
                 <tr class="acl-{{ ace.userType }}{{ ace.wildcard ? ' acl-wildcard' }}{{ ace.inherited ? ' acl-inherited' }}"
                     data-acl-user-type="{{ ace.userType }}"
-                    data-acl-user-id="{{ ace.userId }}">
+                    data-acl-user-id="{{ ace.userId }}"
+                    data-acl-mask="{{ ace.mask }}">
                     <td class="acl-name">
                         {{ ace.name }}
                         {% if ace.inherited %}

@@ -85,6 +85,7 @@ class PermissionViewTest extends TestCase
                 'name' => 'All users',
                 'wildcard' => true,
                 'inherited' => true,
+                'mask' => PermissionInterface::VIEW,
                 'permissions' => ['VIEW' => true, 'EDIT' => false],
             ],
             [
@@ -93,6 +94,7 @@ class PermissionViewTest extends TestCase
                 'name' => 'alice',
                 'wildcard' => false,
                 'inherited' => false,
+                'mask' => PermissionInterface::VIEW | PermissionInterface::EDIT,
                 'permissions' => ['VIEW' => true, 'EDIT' => true],
             ],
             [
@@ -101,6 +103,7 @@ class PermissionViewTest extends TestCase
                 'name' => 'editors',
                 'wildcard' => false,
                 'inherited' => false,
+                'mask' => PermissionInterface::EDIT | PermissionInterface::DELETE,
                 'permissions' => ['VIEW' => false, 'EDIT' => true],
             ],
         ], $params['aces']);

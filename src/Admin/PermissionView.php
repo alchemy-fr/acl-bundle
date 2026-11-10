@@ -61,6 +61,7 @@ class PermissionView
                 'name' => $this->resolveName($ace, $users, $groups),
                 'wildcard' => null === $ace->getUserId(),
                 'inherited' => null !== $id && null === $ace->getObjectId(),
+                'mask' => $ace->getMask(),
                 'permissions' => array_map($ace->hasPermission(...), $permissions),
             ], $aces),
             'users' => $users,

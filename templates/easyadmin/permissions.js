@@ -37,9 +37,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // The mask keeps the bits of the permissions which are not shown
     function saveMask(row) {
-        const mask = [...row.querySelectorAll('[data-acl-permission]:checked')]
-            .reduce((sum, box) => sum + parseInt(box.value, 10), 0);
+        let mask = parseInt(row.dataset.aclMask || '0', 10);
+        row.querySelectorAll('[data-acl-permission]').forEach(box => {
+            const bit = parseInt(box.value, 10);
+            mask = box.checked ? mask | bit : mask & ~bit;
+        });
+        row.dataset.aclMask = mask;
 
         return send('PUT', {...aceKey(row), mask});
     }
