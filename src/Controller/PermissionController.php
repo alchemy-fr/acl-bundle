@@ -26,6 +26,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class PermissionController extends AbstractController
 {
     private const int USER_ID_MAX_LENGTH = 36;
+    private const int PARENT_ID_MAX_LENGTH = 39;
     private const int MASK_MAX = 0x7FFFFFFF;
 
     public function __construct(
@@ -53,6 +54,7 @@ class PermissionController extends AbstractController
             $key['objectId'],
             $mask,
             $metadata,
+            $key['parentId'],
         );
 
         return new JsonResponse($aceSerializer->serialize($ace));
@@ -69,6 +71,7 @@ class PermissionController extends AbstractController
             'objectId',
             'userType',
             'userId',
+            'parentId',
             'userIdWildcard',
             'objectIdWildcard',
         ];
@@ -117,6 +120,7 @@ class PermissionController extends AbstractController
             $key['userId'],
             $key['objectType'],
             $key['objectId'],
+            $key['parentId'],
         );
 
         return new JsonResponse(true);
@@ -157,7 +161,7 @@ class PermissionController extends AbstractController
     }
 
     /**
-     * @return array{userType: int, userId: string, objectType: string, objectId: ?string}
+     * @return array{userType: int, userId: string, objectType: string, objectId: ?string, parentId: ?string}
      */
     private function readAceKey(array $data): array
     {
@@ -176,11 +180,20 @@ class PermissionController extends AbstractController
             throw new BadRequestHttpException('Missing objectType');
         }
 
+        $parentId = $data['parentId'] ?? null;
+        if ('' === $parentId) {
+            $parentId = null;
+        }
+        if (null !== $parentId && (!is_string($parentId) || strlen($parentId) > self::PARENT_ID_MAX_LENGTH)) {
+            throw new BadRequestHttpException('Invalid parentId');
+        }
+
         return [
             'userType' => AccessControlEntryInterface::USER_TYPES[$userType],
             'userId' => $userId,
             'objectType' => $objectType,
             'objectId' => $objectId,
+            'parentId' => $parentId,
         ];
     }
 

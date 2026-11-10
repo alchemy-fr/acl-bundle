@@ -355,6 +355,82 @@ class PermissionControllerTest extends TestCase
         $this->controller->deleteAce($this->jsonRequest('DELETE', array_merge($this->userAceBody(), ['userType' => 'robot'])));
     }
 
+    public function testSetAceForwardsTheParentId(): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+
+        $this->permissionManager
+            ->expects($this->once())
+            ->method('updateOrCreateAce')
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', self::OBJECT_ID, PermissionInterface::VIEW, null, 'p:1')
+            ->willReturn($this->createAce());
+
+        $this->controller->setAce($this->jsonRequest('PUT', array_merge($this->userAceBody(), ['parentId' => 'p:1'])), $this->serializer);
+    }
+
+    public function testDeleteAceForwardsTheParentId(): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+
+        $this->permissionManager
+            ->expects($this->once())
+            ->method('deleteAce')
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', self::OBJECT_ID, 'p:1');
+
+        $this->controller->deleteAce($this->jsonRequest('DELETE', array_merge($this->userAceBody(), ['parentId' => 'p:1'])));
+    }
+
+    public function testAnEmptyParentIdIsNull(): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+
+        $this->permissionManager
+            ->expects($this->once())
+            ->method('deleteAce')
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', self::OBJECT_ID, null);
+
+        $this->controller->deleteAce($this->jsonRequest('DELETE', array_merge($this->userAceBody(), ['parentId' => ''])));
+    }
+
+    #[DataProvider('invalidParentIdProvider')]
+    public function testSetAceRejectsAnInvalidParentId(mixed $parentId): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+        $this->permissionManager->expects($this->never())->method('updateOrCreateAce');
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('Invalid parentId');
+
+        $this->controller->setAce($this->jsonRequest('PUT', array_merge($this->userAceBody(), ['parentId' => $parentId])), $this->serializer);
+    }
+
+    public static function invalidParentIdProvider(): iterable
+    {
+        yield 'non-string' => [42];
+        yield 'too long' => [str_repeat('p', 40)];
+    }
+
+    public function testIndexAcesFiltersOnTheParentId(): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository
+            ->expects($this->once())
+            ->method('findAcesByParams')
+            ->with([
+                'objectType' => 'pub',
+                'parentId' => 'p:1',
+            ])
+            ->willReturn([]);
+
+        $this->controller->indexAces(
+            Request::create('/permissions/aces', 'GET', ['objectType' => 'pub', 'parentId' => 'p:1']),
+            $repository,
+            $this->serializer,
+        );
+    }
+
     public function testInvalidJsonBodyIsRejected(): void
     {
         $this->authorizationChecker->expects($this->never())->method('isGranted');
