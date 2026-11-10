@@ -15,6 +15,7 @@ use Alchemy\AclBundle\Security\PermissionInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
 use Alchemy\AclBundle\Tests\Mock\AclUserMock;
 use Alchemy\AclBundle\Tests\Mock\ObjectMock;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -388,6 +389,64 @@ class PermissionManagerTest extends TestCase
 
         $this->manager->getAces($user, $object);
         $this->manager->deleteAce(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', '42');
+        $this->manager->getAces($user, $object);
+    }
+
+    #[DataProvider('aceAffectingOtherUsersProvider')]
+    public function testUpdateOrCreateAceInvalidatesTheCacheOfEveryUser(int $userType, string $userId, ?string $objectId): void
+    {
+        $this->repository
+            ->expects($this->exactly(2))
+            ->method('getAces')
+            ->willReturn([]);
+        $this->repository
+            ->method('updateOrCreateAce')
+            ->willReturn($this->createAce(PermissionInterface::VIEW));
+
+        $user = new AclUserMock('u-1');
+        $object = new ObjectMock('42');
+
+        $this->manager->getAces($user, $object);
+        $this->manager->updateOrCreateAce($userType, $userId, 'pub', $objectId, PermissionInterface::VIEW);
+        $this->manager->getAces($user, $object);
+    }
+
+    #[DataProvider('aceAffectingOtherUsersProvider')]
+    public function testDeleteAceInvalidatesTheCacheOfEveryUser(int $userType, string $userId, ?string $objectId): void
+    {
+        $this->repository
+            ->expects($this->exactly(2))
+            ->method('getAces')
+            ->willReturn([]);
+        $this->repository->method('deleteAce')->willReturn(false);
+
+        $user = new AclUserMock('u-1');
+        $object = new ObjectMock('42');
+
+        $this->manager->getAces($user, $object);
+        $this->manager->deleteAce($userType, $userId, 'pub', $objectId);
+        $this->manager->getAces($user, $object);
+    }
+
+    public static function aceAffectingOtherUsersProvider(): iterable
+    {
+        yield 'group of the user' => [AccessControlEntryInterface::TYPE_GROUP_VALUE, 'g-1', '42'];
+        yield 'all users' => [AccessControlEntryInterface::TYPE_USER_VALUE, AccessControlEntryInterface::USER_WILDCARD, '42'];
+        yield 'every object of the type' => [AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', null];
+    }
+
+    public function testResetClearsTheCache(): void
+    {
+        $this->repository
+            ->expects($this->exactly(2))
+            ->method('getAces')
+            ->willReturn([]);
+
+        $user = new AclUserMock('u-1');
+        $object = new ObjectMock('42');
+
+        $this->manager->getAces($user, $object);
+        $this->manager->reset();
         $this->manager->getAces($user, $object);
     }
 

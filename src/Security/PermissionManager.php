@@ -13,8 +13,9 @@ use Alchemy\AclBundle\Model\AclUserInterface;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
 use Alchemy\AclBundle\Repository\UserRepositoryInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
-class PermissionManager
+class PermissionManager implements ResetInterface
 {
     private array $cache = [];
 
@@ -29,6 +30,11 @@ class PermissionManager
     public function resetCache(): void
     {
         $this->cache = [];
+    }
+
+    public function reset(): void
+    {
+        $this->resetCache();
     }
 
     public function isGranted(AclUserInterface $user, AclObjectInterface $object, array|int $permission, bool $ownershipGrants = true): bool
@@ -57,7 +63,7 @@ class PermissionManager
     public function getAces(AclUserInterface $user, AclObjectInterface $object): array
     {
         $objectKey = $this->objectMapper->getObjectKey($object);
-        $key = $this->getCacheKey(AccessControlEntryInterface::TYPE_USER_VALUE, $user->getId(), $objectKey, $object->getId());
+        $key = $this->getCacheKey($user->getId(), $objectKey, $object->getId());
         if (isset($this->cache[$key])) {
             return $this->cache[$key];
         }
@@ -202,7 +208,8 @@ class PermissionManager
             $previousAce,
         );
 
-        unset($this->cache[$this->getCacheKey($userType, $userId, $objectType, $objectId)]);
+        // A group, all-users or type-wide ACE changes the cached ACEs of other users and objects
+        $this->resetCache();
 
         $this->eventDispatcher->dispatch(new AclUpsertEvent(
             $userType,
@@ -218,9 +225,9 @@ class PermissionManager
         return $ace;
     }
 
-    private function getCacheKey(int $userType, string $userId, string $objectType, ?string $objectId): string
+    private function getCacheKey(string $userId, string $objectType, string $objectId): string
     {
-        return sprintf('%d:%s:%s:%s', $userType, $userId, $objectType, $objectId);
+        return sprintf('%s:%s:%s', $userId, $objectType, $objectId);
     }
 
     public function deleteAce(
@@ -248,6 +255,6 @@ class PermissionManager
             ), AclDeleteEvent::NAME);
         }
 
-        unset($this->cache[$this->getCacheKey($userType, $userId, $objectType, $objectId)]);
+        $this->resetCache();
     }
 }
