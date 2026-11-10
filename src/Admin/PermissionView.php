@@ -48,7 +48,7 @@ class PermissionView
         $aces = array_map(fn (AccessControlEntryInterface $ace): array => [
             'userType' => $ace->getUserTypeString(),
             'userId' => $ace->getUserId() ?? AccessControlEntryInterface::USER_WILDCARD,
-            'name' => $this->resolveUserName($ace),
+            'name' => $this->resolveName($ace, $users, $groups),
             'objectId' => $ace->getObjectId(),
             'permissions' => array_map($ace->hasPermission(...), $permissions),
         ], $aces);
@@ -78,27 +78,26 @@ class PermissionView
         return $params;
     }
 
-    private function resolveUserName(AccessControlEntryInterface $ace): string
+    /**
+     * @param array<string, string> $users
+     * @param array<string, string> $groups
+     */
+    private function resolveName(AccessControlEntryInterface $ace, array $users, array $groups): string
     {
         $userId = $ace->getUserId();
-
-        if (null !== $userId) {
-            switch ($ace->getUserType()) {
-                case AccessControlEntryInterface::TYPE_USER_VALUE:
-                    if (null !== $user = $this->userRepository->getUser($userId)) {
-                        return $user['username'];
-                    }
-
-                    return sprintf('User "%s" not found', $userId);
-                case AccessControlEntryInterface::TYPE_GROUP_VALUE:
-                    if (null !== $group = $this->groupRepository->getGroup($userId)) {
-                        return $group['name'];
-                    }
-
-                    return sprintf('Group "%s" not found', $userId);
-            }
+        if (null === $userId) {
+            return AccessControlEntryInterface::USER_WILDCARD;
         }
 
-        return AccessControlEntryInterface::USER_WILDCARD;
+        // The lists may be partial (e.g. paginated by the repositories)
+        if (AccessControlEntryInterface::TYPE_GROUP_VALUE === $ace->getUserType()) {
+            return $groups[$userId]
+                ?? $this->groupRepository->getGroup($userId)['name']
+                ?? sprintf('Group "%s" not found', $userId);
+        }
+
+        return $users[$userId]
+            ?? $this->userRepository->getUser($userId)['username']
+            ?? sprintf('User "%s" not found', $userId);
     }
 }
