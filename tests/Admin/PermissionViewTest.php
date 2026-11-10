@@ -36,17 +36,10 @@ class PermissionViewTest extends TestCase
             ['id' => 'u-1', 'username' => 'alice'],
             ['id' => 'u-2', 'username' => 'bob'],
         ]);
-        $this->userRepository->method('getUser')->willReturnMap([
-            ['u-1', [], ['id' => 'u-1', 'username' => 'alice']],
-            ['u-2', [], ['id' => 'u-2', 'username' => 'bob']],
-        ]);
 
         $this->groupRepository = $this->createMock(GroupRepositoryInterface::class);
         $this->groupRepository->method('getGroups')->willReturn([
             ['id' => 'g-1', 'name' => 'editors'],
-        ]);
-        $this->groupRepository->method('getGroup')->willReturnMap([
-            ['g-1', [], ['id' => 'g-1', 'name' => 'editors']],
         ]);
 
         $this->em = $this->createMock(EntityManagerInterface::class);
@@ -159,21 +152,37 @@ class PermissionViewTest extends TestCase
         $this->assertNull($this->view->getViewParameters('pub', '42')['object_title']);
     }
 
+    public function testNamesMissingFromTheListsAreLookedUp(): void
+    {
+        $this->repository->method('getObjectAces')->willReturn([
+            $this->createAce(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', null, PermissionInterface::VIEW),
+            $this->createAce(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-3', null, PermissionInterface::VIEW),
+            $this->createAce(AccessControlEntryInterface::TYPE_GROUP_VALUE, 'g-2', null, PermissionInterface::VIEW),
+        ]);
+        $this->userRepository
+            ->expects($this->once())
+            ->method('getUser')
+            ->with('u-3')
+            ->willReturn(['id' => 'u-3', 'username' => 'carol']);
+        $this->groupRepository
+            ->expects($this->once())
+            ->method('getGroup')
+            ->with('g-2')
+            ->willReturn(['id' => 'g-2', 'name' => 'viewers']);
+
+        $aces = $this->view->getViewParameters('pub', null)['aces'];
+
+        $this->assertSame(['alice', 'carol', 'viewers'], array_column($aces, 'name'));
+    }
+
     public function testUnknownUsersAndGroupsGetAPlaceholderName(): void
     {
-        $this->repository->method('getObjectAces')->willReturnMap([
-            ['pub', null, []],
-            ['pub', '42', [
-                $this->createAce(AccessControlEntryInterface::TYPE_USER_VALUE, 'ghost', '42', PermissionInterface::VIEW),
-                $this->createAce(AccessControlEntryInterface::TYPE_GROUP_VALUE, 'nobody', '42', PermissionInterface::VIEW),
-            ]],
+        $this->repository->method('getObjectAces')->willReturn([
+            $this->createAce(AccessControlEntryInterface::TYPE_USER_VALUE, 'ghost', null, PermissionInterface::VIEW),
+            $this->createAce(AccessControlEntryInterface::TYPE_GROUP_VALUE, 'nobody', null, PermissionInterface::VIEW),
         ]);
 
-        $objectRepository = $this->createMock(EntityRepository::class);
-        $objectRepository->method('find')->willReturn(null);
-        $this->em->method('getRepository')->willReturn($objectRepository);
-
-        $aces = $this->view->getViewParameters('pub', '42')['aces'];
+        $aces = $this->view->getViewParameters('pub', null)['aces'];
 
         $this->assertSame('User "ghost" not found', $aces[0]['name']);
         $this->assertSame('Group "nobody" not found', $aces[1]['name']);
