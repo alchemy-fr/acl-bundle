@@ -20,7 +20,18 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    async function send(method, body) {
+    // Each PUT carries a whole mask: the requests are sent one after the other, so that
+    // the last change is the last one written
+    let queue = Promise.resolve();
+
+    function send(method, body) {
+        const request = queue.then(() => doSend(method, body));
+        queue = request.catch(() => {});
+
+        return request;
+    }
+
+    async function doSend(method, body) {
         errorBox.classList.add('d-none');
         try {
             const response = await fetch(root.dataset.aceUrl, {
