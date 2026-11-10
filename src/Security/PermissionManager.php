@@ -17,6 +17,11 @@ use Symfony\Contracts\Service\ResetInterface;
 
 class PermissionManager implements ResetInterface
 {
+    /**
+     * Starts every cache key with a letter, so that PHP never turns a key into an integer.
+     */
+    private const string CACHE_KEY_PREFIX = 'aces:';
+
     private array $cache = [];
 
     public function __construct(
@@ -227,7 +232,7 @@ class PermissionManager implements ResetInterface
 
     private function getCacheKey(string $userId, string $objectType, string $objectId): string
     {
-        return sprintf('%s:%s:%s', $userId, $objectType, $objectId);
+        return sprintf('%s%s:%s:%s', self::CACHE_KEY_PREFIX, $userId, $objectType, $objectId);
     }
 
     public function deleteAce(

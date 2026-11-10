@@ -455,6 +455,16 @@ class PermissionManagerTest extends TestCase
         yield 'every object of the type' => [AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', null];
     }
 
+    public function testCacheKeysStartWithAPrefixWhateverTheUserId(): void
+    {
+        $this->repository->method('getAces')->willReturn([]);
+
+        $this->manager->getAces(new AclUserMock('42'), new ObjectMock('7'));
+
+        $keys = array_keys(new \ReflectionProperty(PermissionManager::class, 'cache')->getValue($this->manager));
+        $this->assertSame(['aces:42:pub:7'], $keys);
+    }
+
     public function testResetClearsTheCache(): void
     {
         $this->repository
