@@ -41,7 +41,7 @@
     {% endif %}
 {% endblock %}
 
-{% macro grantee_select(user_type, label, choices) %}
+{% macro grantee_select(user_type, label, choices, granted) %}
     <div class="col-md-6 mb-3">
         <label class="form-label" for="acl-{{ user_type }}-select">{{ label }}</label>
         <select id="acl-{{ user_type }}-select"
@@ -51,7 +51,7 @@
                 data-ea-i18n-no-results-found="No results found">
             <option value="">Select a {{ user_type }} to grant...</option>
             {% for id, name in choices %}
-                <option value="{{ id }}">{{ name }}</option>
+                <option value="{{ id }}"{% if (user_type ~ ':' ~ id) in granted %} disabled{% endif %}>{{ name }}</option>
             {% endfor %}
         </select>
     </div>
@@ -59,6 +59,9 @@
 
 {% block main %}
     {% import _self as acl %}
+    {% set granted = aces
+        |filter(ace => not ace.inherited and ace.parentId is null)
+        |map(ace => ace.userType ~ ':' ~ ace.userId) %}
 
     <div class="acl-permissions"
          data-ace-url="{{ path('alchemy_acl_admin_ace') }}"
@@ -75,8 +78,8 @@
         <div class="alert alert-danger d-none" role="alert" data-acl-error></div>
 
         <div class="row">
-            {{ acl.grantee_select('group', 'Add a group', groups) }}
-            {{ acl.grantee_select('user', 'Add a user', users) }}
+            {{ acl.grantee_select('group', 'Add a group', groups, granted) }}
+            {{ acl.grantee_select('user', 'Add a user', users, granted) }}
         </div>
 
         <template data-acl-row-template>

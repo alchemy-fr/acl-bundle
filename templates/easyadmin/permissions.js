@@ -59,10 +59,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return send('PUT', {...aceKey(row), mask});
     }
 
-    function isGranted(userType, userId) {
-        return [...tbody.querySelectorAll('tr:not(.acl-inherited)')].some(row => row.dataset.aclUserType === userType
-            && row.dataset.aclUserId === userId
-            && !row.dataset.aclParentId);
+    function setGrantable(userType, userId, grantable) {
+        const select = root.querySelector(`select[data-acl-user-type="${userType}"]`);
+        const option = [...select.options].find(o => o.value === userId);
+        if (option) {
+            option.disabled = !grantable;
+        }
+        // TomSelect keeps its own copy of the options
+        const ts = select.tomselect;
+        if (ts?.options[userId]) {
+            ts.updateOption(userId, {...ts.options[userId], disabled: !grantable});
+        }
     }
 
     root.addEventListener('change', event => {
@@ -87,7 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         button.disabled = true;
-        send('DELETE', aceKey(row)).then(() => row.remove(), () => button.disabled = false);
+        const key = aceKey(row);
+        send('DELETE', key).then(() => {
+            row.remove();
+            if (null === key.parentId) {
+                setGrantable(key.userType, key.userId, true);
+            }
+        }, () => button.disabled = false);
     });
 
     root.querySelectorAll('select[data-acl-user-type]').forEach(select => {
@@ -103,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 select.value = '';
             }
-            if (isGranted(userType, userId)) {
+            if (option.disabled) {
                 return;
             }
 
@@ -116,7 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             row.querySelector('.acl-name').textContent = option.textContent;
 
-            send('PUT', {...aceKey(row), mask: 0}).then(() => tbody.prepend(row), () => {});
+            send('PUT', {...aceKey(row), mask: 0}).then(() => {
+                tbody.prepend(row);
+                setGrantable(userType, userId, false);
+            }, () => {});
         });
     });
 
