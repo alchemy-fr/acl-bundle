@@ -103,6 +103,13 @@ class AlchemyAclBundleTest extends TestCase
         $this->assertNull($container->getParameter('alchemy_acl.enabled_permissions'));
     }
 
+    public function testUnknownPermissionsAreRejected(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+
+        $this->load(['enabled_permissions' => ['VIEW', 'READ']]);
+    }
+
     public function testUnknownOptionsAreRejected(): void
     {
         $this->expectException(InvalidConfigurationException::class);
