@@ -493,6 +493,91 @@ class PermissionControllerTest extends TestCase
         );
     }
 
+    public function testIndexAcesIgnoresAJsonBodyOnGet(): void
+    {
+        $object = new ObjectMock('pub-42', 'u-1');
+        $this->em->method('find')->with(ObjectMock::class, 'pub-42')->willReturn($object);
+        $this->authorizationChecker
+            ->method('isGranted')
+            ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_READ === $attribute && $subject === $object);
+
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository->expects($this->never())->method('findAcesByParams');
+
+        $this->expectException(AccessDeniedHttpException::class);
+
+        $this->controller->indexAces(
+            Request::create(
+                '/permissions/aces',
+                'GET',
+                [],
+                [],
+                [],
+                ['CONTENT_TYPE' => 'application/json'],
+                json_encode(['objectType' => 'pub', 'objectId' => 'pub-42'], JSON_THROW_ON_ERROR),
+            ),
+            $repository,
+            $this->serializer,
+        );
+    }
+
+    public function testIndexAcesKeepsANonAdminOnTheAuthorizedObject(): void
+    {
+        $object = new ObjectMock('pub-42', 'u-1');
+        $this->em->method('find')->with(ObjectMock::class, 'pub-42')->willReturn($object);
+        $this->authorizationChecker
+            ->method('isGranted')
+            ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_READ === $attribute && $subject === $object);
+
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository
+            ->expects($this->once())
+            ->method('findAcesByParams')
+            ->with([
+                'objectType' => 'pub',
+                'objectId' => 'pub-42',
+                'userIdWildcard' => '1',
+                'objectIdWildcard' => '1',
+            ])
+            ->willReturn([]);
+
+        $this->controller->indexAces(
+            Request::create('/permissions/aces', 'GET', [
+                'objectType' => 'pub',
+                'objectId' => 'pub-42',
+                'userIdWildcard' => '1',
+                'objectIdWildcard' => '1',
+            ]),
+            $repository,
+            $this->serializer,
+        );
+    }
+
+    public function testIndexAcesKeepsATypeWideReadOnTheTypeAces(): void
+    {
+        $this->em->expects($this->never())->method('find');
+        $this->authorizationChecker
+            ->method('isGranted')
+            ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_READ === $attribute && $subject instanceof ObjectTypeSubject);
+
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository
+            ->expects($this->once())
+            ->method('findAcesByParams')
+            ->with([
+                'objectType' => 'pub',
+                'objectIdWildcard' => '1',
+                'objectId' => null,
+            ])
+            ->willReturn([]);
+
+        $this->controller->indexAces(
+            Request::create('/permissions/aces', 'GET', ['objectType' => 'pub', 'objectIdWildcard' => '1']),
+            $repository,
+            $this->serializer,
+        );
+    }
+
     private function grantOnly(string $grantedAttribute): void
     {
         $this->authorizationChecker
