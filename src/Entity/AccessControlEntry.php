@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 use Ramsey\Uuid\Doctrine\UuidType;
 use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AccessControlEntryRepository::class)]
@@ -44,8 +45,12 @@ class AccessControlEntry implements AccessControlEntryInterface
     #[ORM\Column(type: Types::STRING, length: 20)]
     protected ?string $objectType = null;
 
+    /**
+     * Holds the UuidInterface hydrated by Doctrine until it is set: the unit of work
+     * compares the property with the value it hydrated, a string would always differ.
+     */
     #[ORM\Column(type: UuidType::NAME, nullable: true)]
-    protected ?string $objectId = null;
+    protected UuidInterface|string|null $objectId = null;
 
     #[ORM\Column(type: Types::INTEGER)]
     protected int $mask = 0;
@@ -115,12 +120,14 @@ class AccessControlEntry implements AccessControlEntryInterface
 
     public function getObjectId(): ?string
     {
-        return $this->objectId;
+        return $this->objectId instanceof UuidInterface ? $this->objectId->toString() : $this->objectId;
     }
 
     public function setObjectId(?string $objectId): void
     {
-        $this->objectId = $objectId;
+        if ($objectId !== $this->getObjectId()) {
+            $this->objectId = $objectId;
+        }
     }
 
     public function getMask(): int

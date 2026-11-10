@@ -140,8 +140,10 @@ needed). The other methods are only used by the API serializer and the admin UI.
 
 ## Making your entities ACL-aware
 
-Protected entities implement `AclObjectInterface`. The owner returned by `getAclOwnerId()`
-is granted everything on the object without any ACE.
+Protected entities implement `AclObjectInterface`. Their `getId()` must return a UUID: the
+ACE table stores the object id in a `uuid` column (a native `UUID` on PostgreSQL), which
+lets `joinAcl()` compare it with the id of the entity. The owner returned by
+`getAclOwnerId()` is granted everything on the object without any ACE.
 
 ```php
 use Alchemy\AclBundle\AclObjectInterface;
@@ -363,7 +365,7 @@ The examples below assume the routes were imported under `/permissions`.
 | `userType`   | `user` or `group`                                                                            |
 | `userId`     | The user or group ID. Send `__ALL_USERS__` to target everybody (stored as `NULL`).           |
 | `objectType` | One of the keys declared in `alchemy_acl.objects`                                            |
-| `objectId`   | The object ID. `null` or empty targets every object of the type.                             |
+| `objectId`   | The object UUID. `null` or empty targets every object of the type.                           |
 | `mask`       | The sum of the granted permission bits                                                       |
 | `metadata`   | Free JSON object stored with the ACE (optional: when omitted, an existing ACE keeps its own) |
 | `parentId`   | Optional discriminator, see [Managing ACEs from PHP](#managing-aces-from-php). Omitted means `NULL` |
@@ -380,13 +382,13 @@ also include the wildcard ACEs alongside the ones matching the given ID.
 
 ```bash
 # ACEs of an object, including type-wide ones
-curl "{HOST}/permissions/aces?objectType=publication&objectId=pub-42&objectIdWildcard=1"
+curl "{HOST}/permissions/aces?objectType=publication&objectId=9f0c4d1e-7b2a-4c3e-8d5f-1a2b3c4d5e6f&objectIdWildcard=1"
 
 # ACEs of a group
 curl "{HOST}/permissions/aces?userType=group&userId=g-42"
 
 # ACEs of a user on an object
-curl "{HOST}/permissions/aces?userType=user&userId=u-42&objectType=publication&objectId=pub-42"
+curl "{HOST}/permissions/aces?userType=user&userId=u-42&objectType=publication&objectId=9f0c4d1e-7b2a-4c3e-8d5f-1a2b3c4d5e6f"
 ```
 
 ### `PUT /permissions/ace`
@@ -400,7 +402,7 @@ preflight.
     "userType": "user",
     "userId": "u-42",
     "objectType": "publication",
-    "objectId": "pub-42",
+    "objectId": "9f0c4d1e-7b2a-4c3e-8d5f-1a2b3c4d5e6f",
     "mask": 7,
     "metadata": {"granted_by": "admin"}
 }
@@ -413,7 +415,7 @@ preflight.
     "userType": "user",
     "userId": "u-42",
     "objectType": "publication",
-    "objectId": "pub-42"
+    "objectId": "9f0c4d1e-7b2a-4c3e-8d5f-1a2b3c4d5e6f"
 }
 ```
 
@@ -507,8 +509,9 @@ Without a local PHP 8.5, the same commands run in Docker:
 docker run --rm -v "$PWD":/app -w /app php:8.5-cli vendor/bin/phpunit
 ```
 
-The suite is made of unit tests only: the Doctrine repository, the entity manager and the
-security layer are replaced by mocks, so no database is needed.
+The suite is made of unit tests: the Doctrine repository, the entity manager and the
+security layer are replaced by mocks. Only `AccessControlEntryMappingTest` runs the entity
+mapping against an in-memory SQLite database (it is skipped without `pdo_sqlite`).
 
 ## License
 
