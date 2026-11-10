@@ -11,6 +11,7 @@ use Alchemy\AclBundle\Form\ObjectTypeFormType;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Repository\DoctrinePermissionRepository;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
+use Alchemy\AclBundle\Security\PermissionInterface;
 use Alchemy\AclBundle\Security\PermissionManager;
 use Alchemy\AclBundle\Security\Voter\AclVoter;
 use Alchemy\AclBundle\Security\Voter\SetPermissionVoter;
@@ -41,7 +42,7 @@ class AlchemyAclBundle extends AbstractBundle
                         'VIEW',
                         'EDIT',
                     ])
-                    ->scalarPrototype()->end()
+                    ->enumPrototype()->values(array_keys(PermissionInterface::PERMISSIONS))->end()
                 ->end()
                 ->arrayNode('objects')
                 ->useAttributeAsKey('key')
