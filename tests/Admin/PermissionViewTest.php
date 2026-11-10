@@ -22,6 +22,8 @@ use PHPUnit\Framework\TestCase;
 class PermissionViewTest extends TestCase
 {
     private PermissionRepositoryInterface&MockObject $repository;
+    private UserRepositoryInterface&MockObject $userRepository;
+    private GroupRepositoryInterface&MockObject $groupRepository;
     private EntityManagerInterface&MockObject $em;
     private PermissionView $view;
 
@@ -29,34 +31,27 @@ class PermissionViewTest extends TestCase
     {
         $this->repository = $this->createMock(PermissionRepositoryInterface::class);
 
-        $userRepository = $this->createMock(UserRepositoryInterface::class);
-        $userRepository->method('getUsers')->willReturn([
+        $this->userRepository = $this->createMock(UserRepositoryInterface::class);
+        $this->userRepository->method('getUsers')->willReturn([
             ['id' => 'u-1', 'username' => 'alice'],
             ['id' => 'u-2', 'username' => 'bob'],
         ]);
-        $userRepository->method('getUser')->willReturnMap([
+        $this->userRepository->method('getUser')->willReturnMap([
             ['u-1', [], ['id' => 'u-1', 'username' => 'alice']],
             ['u-2', [], ['id' => 'u-2', 'username' => 'bob']],
         ]);
 
-        $groupRepository = $this->createMock(GroupRepositoryInterface::class);
-        $groupRepository->method('getGroups')->willReturn([
+        $this->groupRepository = $this->createMock(GroupRepositoryInterface::class);
+        $this->groupRepository->method('getGroups')->willReturn([
             ['id' => 'g-1', 'name' => 'editors'],
         ]);
-        $groupRepository->method('getGroup')->willReturnMap([
+        $this->groupRepository->method('getGroup')->willReturnMap([
             ['g-1', [], ['id' => 'g-1', 'name' => 'editors']],
         ]);
 
         $this->em = $this->createMock(EntityManagerInterface::class);
 
-        $this->view = new PermissionView(
-            new ObjectMapping(['pub' => TitledObjectMock::class]),
-            $this->repository,
-            $userRepository,
-            $groupRepository,
-            $this->em,
-            ['VIEW', 'EDIT'],
-        );
+        $this->view = $this->createView(['VIEW', 'EDIT']);
     }
 
     public function testViewParametersForAnObject(): void
@@ -132,6 +127,16 @@ class PermissionViewTest extends TestCase
         $this->assertSame([], $params['aces']);
     }
 
+    public function testEveryPermissionIsShownWhenNoneIsEnabled(): void
+    {
+        $this->repository->method('getObjectAces')->willReturn([]);
+
+        $this->assertSame(
+            PermissionInterface::PERMISSIONS,
+            $this->createView(null)->getViewParameters('pub', null)['permissions']
+        );
+    }
+
     public function testObjectTitleIsNullWhenTheObjectIsNotStringable(): void
     {
         $this->repository->method('getObjectAces')->willReturn([]);
@@ -172,6 +177,18 @@ class PermissionViewTest extends TestCase
 
         $this->assertSame('User "ghost" not found', $aces[0]['name']);
         $this->assertSame('Group "nobody" not found', $aces[1]['name']);
+    }
+
+    private function createView(?array $enabledPermissions): PermissionView
+    {
+        return new PermissionView(
+            new ObjectMapping(['pub' => TitledObjectMock::class]),
+            $this->repository,
+            $this->userRepository,
+            $this->groupRepository,
+            $this->em,
+            $enabledPermissions,
+        );
     }
 
     private function createAce(int $userType, ?string $userId, ?string $objectId, int $mask): AccessControlEntry

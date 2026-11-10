@@ -37,7 +37,7 @@ class AlchemyAclBundle extends AbstractBundle
                         'OPERATOR',
                         'OWNER',
                     ])
-                    ->info('Explicit enabled permissions, all are enabled by default.')
+                    ->info('The permissions offered by the admin UI, all of them when empty.')
                     ->example([
                         'VIEW',
                         'EDIT',
