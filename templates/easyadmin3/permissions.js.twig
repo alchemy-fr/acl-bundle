@@ -1,4 +1,8 @@
 $(function () {
+    const objectType = '{{ object_type|e('js') }}';
+    const objectId = {% if object_id is defined %}'{{ object_id|e('js') }}'{% else %}null{% endif %};
+    const userWildcard = '{{ USER_WILDCARD|e('js') }}';
+
     $('body')
         .on('change', '.perm input[type=checkbox]', function () {
             const $tr = $(this).closest('tr');
@@ -14,7 +18,7 @@ $(function () {
         .on('click', '.delete', function () {
             var $tr = $(this).closest('tr');
             $tr.remove();
-            deleteAce($tr.data('type'), $tr.data('id'));
+            deleteAce($tr.attr('data-type'), $tr.attr('data-id'));
         });
 
     $('#aces tr').each(function () {
@@ -35,20 +39,22 @@ $(function () {
         $tr.find('td.perm input').each(function () {
             mask += $(this).is(':checked') ? parseInt($(this).val()) : 0;
         });
-        setPermissions($tr.data('type'), $tr.data('id'), mask);
+        setPermissions($tr.attr('data-type'), $tr.attr('data-id'), mask);
     }
 
     function isInList(id, type) {
-        return $('#aces').find('tr[data-id=' + id + '][data-type=' + type + ']').length === 1;
+        return $('#aces tr').filter(function () {
+            return $(this).attr('data-id') === id && $(this).attr('data-type') === type;
+        }).length === 1;
     }
 
     function setPermissions(userType, userId, mask) {
         $.ajax({
             type: 'PUT',
-            url: '{{ path('alchemy_acl_admin_ace') }}',
+            url: '{{ path('alchemy_acl_admin_ace')|e('js') }}',
             data: {
-                objectType: '{{ object_type }}',
-                objectId: {{ object_id is defined ? ("'"~object_id~"'")|raw : 'null' }},
+                objectType: objectType,
+                objectId: objectId,
                 userId: userId,
                 userType: userType,
                 mask: mask
@@ -59,10 +65,10 @@ $(function () {
     function deleteAce(userType, userId) {
         $.ajax({
             type: 'DELETE',
-            url: '{{ path('alchemy_acl_admin_ace_delete') }}',
+            url: '{{ path('alchemy_acl_admin_ace_delete')|e('js') }}',
             data: {
-                objectType: '{{ object_type }}',
-                objectId: {{ object_id is defined ? ("'"~object_id~"'")|raw : 'null' }},
+                objectType: objectType,
+                objectId: objectId,
                 userId: userId,
                 userType: userType
             }
@@ -78,11 +84,11 @@ $(function () {
                     if (!state.id) {
                         return state.text;
                     }
-                    const disabled = isInList(state.id, userType);
 
-                    return $(
-                        '<span class="' + (disabled ? 'disabled ' : '') + state.element.className + '">' + state.text + '</span>'
-                    );
+                    return $('<span>')
+                        .addClass(state.element.className)
+                        .toggleClass('disabled', isInList(state.id, userType))
+                        .text(state.text);
                 }
             })
             .on('select2:select', function () {
@@ -96,12 +102,13 @@ $(function () {
 
                 setPermissions(userType, userId, 0);
 
-                const $newAce = $($('#row-template')
-                    .html()
-                    .replace(/#USERTYPE#/g, userType)
-                    .replace(/#USERID#/g, userId)
-                    .replace(/#ENTITYNAME#/g, data[0].text));
-                if (userId === '{{ USER_WILDCARD }}') {
+                // User and group names are untrusted: they are only ever set as text or attribute values
+                const $newAce = $($.parseHTML($('#row-template').html().trim()))
+                    .attr('data-id', userId)
+                    .attr('data-type', userType)
+                    .addClass('type-' + userType);
+                $newAce.find('.entity-name').text(data[0].text);
+                if (userId === userWildcard) {
                     $newAce.addClass('type-wildcard');
                 }
                 $('#aces tbody').prepend($newAce);

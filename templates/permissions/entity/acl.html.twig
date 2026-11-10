@@ -3,18 +3,19 @@
 
 {% block head_custom_stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <style>
         {% include '@AlchemyAcl/permissions/style.css' %}
     </style>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css" rel="stylesheet"
+          integrity="sha384-KZO2FRYNmIHerhfYMjCIUaJeGBRXP7CN24SiNSG+wdDzgwvxWbl16wMVtWiJTcMt" crossorigin="anonymous"/>
 {% endblock %}
 
 {% block body_javascript %}
     {{ parent() }}
-    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"
+            integrity="sha384-JnbsSLBmv2/R0fUmF2XYIcAEMPHEAO51Gitn9IjL4l89uFTIgtLF1+jqIqqd9FSk" crossorigin="anonymous"></script>
     <script>
         {% include '@AlchemyAcl/permissions/permissions.js.twig' %}
     </script>
@@ -28,15 +29,13 @@
 
 {% block main %}
     <script id="row-template" type="text/x-custom-template">
-        <tr data-id="#USERID#" data-type="#USERTYPE#" class="type-#USERTYPE#">
-            <td class="entity-name">
-                #ENTITYNAME#
-            </td>
+        <tr>
+            <td class="entity-name"></td>
             {% for perm,k in permissions %}
                 <td class="perm">
                     <input type="checkbox"
                            value="{{ k }}"
-                           name="ace[#USERID#][]">
+                           name="perm">
                 </td>
             {% endfor %}
             <td class="all-toggle">
