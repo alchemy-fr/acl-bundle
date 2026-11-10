@@ -119,10 +119,14 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         bool $append = false,
         ?AccessControlEntryInterface &$previousAce = null,
     ): AccessControlEntryInterface {
-        $ace = $this->findAce($userType, $userId, $objectType, $objectId, $parentId);
+        if (null !== $objectId && empty($objectId)) {
+            throw new \InvalidArgumentException('Empty objectId');
+        }
 
-        if (!$ace instanceof AccessControlEntry) {
-            $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
+        $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
+        $ace = $this->findAndMergeDuplicates($userType, $userId, $objectType, $objectId, $parentId);
+
+        if (null === $ace) {
             $ace = new AccessControlEntry();
             $ace->setUserType($userType);
             $ace->setUserId($userId);
@@ -157,17 +161,9 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         ?AccessControlEntryInterface &$previousAce = null,
     ): bool {
         $userId = AccessControlEntryInterface::USER_WILDCARD === $userId ? null : $userId;
+        $ace = $this->findAndMergeDuplicates($userType, $userId, $objectType, $objectId, $parentId);
 
-        $ace = $this->em->getRepository(AccessControlEntry::class)
-            ->findOneBy([
-                'objectType' => $objectType,
-                'objectId' => $objectId,
-                'userType' => $userType,
-                'userId' => $userId,
-                'parentId' => $parentId,
-            ]);
-
-        if ($ace instanceof AccessControlEntry) {
+        if (null !== $ace) {
             $previousAce = $ace;
             $this->em->remove($ace);
             $this->em->flush();
@@ -176,5 +172,39 @@ class DoctrinePermissionRepository implements PermissionRepositoryInterface
         }
 
         return false;
+    }
+
+    /**
+     * The unique constraint does not apply when one of its columns is NULL (parentId
+     * nearly always is), so two concurrent writes can create the same ACE twice.
+     * The duplicates are merged into the oldest ACE, which keeps the permissions
+     * they granted together, and scheduled for removal.
+     */
+    private function findAndMergeDuplicates(
+        int $userType,
+        ?string $userId,
+        string $objectType,
+        ?string $objectId,
+        ?string $parentId,
+    ): ?AccessControlEntry {
+        /** @var AccessControlEntry[] $aces */
+        $aces = $this->em->getRepository(AccessControlEntry::class)
+            ->findBy([
+                'objectType' => $objectType,
+                'objectId' => $objectId,
+                'userType' => $userType,
+                'userId' => $userId,
+                'parentId' => $parentId,
+            ], [
+                'createdAt' => 'ASC',
+            ]);
+
+        $ace = array_shift($aces);
+        foreach ($aces as $duplicate) {
+            $ace->addPermission($duplicate->getMask());
+            $this->em->remove($duplicate);
+        }
+
+        return $ace;
     }
 }
