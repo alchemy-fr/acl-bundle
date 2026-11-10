@@ -338,7 +338,8 @@ with the previous state of the ACE, so you can audit changes or refresh caches:
 
 Both expose `getUserType()`, `getUserId()`, `getObjectType()`, `getObjectId()`,
 `getPreviousPermissions()` and `getPreviousMetadata()`. The previous values are `null`
-when the ACE did not exist before.
+when the ACE did not exist before. `getPermissions()` and `getMetadata()` are those the ACE
+holds after the write, also when `append: true` only added bits.
 
 ```php
 use Alchemy\AclBundle\Event\AclUpsertEvent;

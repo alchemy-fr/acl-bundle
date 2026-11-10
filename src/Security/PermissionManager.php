@@ -216,7 +216,7 @@ class PermissionManager implements ResetInterface
             $userId,
             $objectType,
             $objectId,
-            $permissions,
+            $ace->getMask(),
             $metadata ?? $ace->getMetadata(),
             $previousAce?->getMask(),
             $previousAce?->getMetadata()
