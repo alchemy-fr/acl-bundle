@@ -102,9 +102,10 @@ curl -X DELETE "{HOST}/permissions/ace" \
 
 - `ROLE_ADMIN` can do everything.
 - Otherwise the application's voters are asked for `ACL_READ` (list) or `ACL_WRITE`
-  (create, update, delete) on the object. The bundled `SetPermissionVoter` grants both to the
-  owner of the object. Add your own voter to let other users share an object, for instance
-  those holding the `SHARE` permission:
+  (create, update, delete) on the object, and only ACEs without a `parentId` can be created,
+  updated or deleted: those with one are left to the application's own code. The bundled
+  `SetPermissionVoter` grants both to the owner of the object. Add your own voter to let other
+  users share an object, for instance those holding the `SHARE` permission:
 
 ```php
 use Alchemy\AclBundle\Model\AclUserInterface;
@@ -170,7 +171,7 @@ class ObjectTypeAclVoter extends Voter
 | Status | When                                                                                   |
 |--------|----------------------------------------------------------------------------------------|
 | `400`  | Unknown `objectType`, `objectId` which is not a UUID, missing or unknown `userType`, missing `userId`, `mask` which is not a non-negative integer, `metadata` which is not an object, malformed JSON |
-| `403`  | The voters denied the request                                                          |
+| `403`  | The voters denied the request, or a user without `ROLE_ADMIN` sent a `parentId` to `PUT` or `DELETE` |
 | `415`  | The body of a `PUT` or `DELETE` is not JSON                                            |
 
 Invalid requests get their `400` before any authorization check.
