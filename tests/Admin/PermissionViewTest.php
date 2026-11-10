@@ -67,7 +67,6 @@ class PermissionViewTest extends TestCase
 
         $params = $this->view->getViewParameters('pub', '42');
 
-        $this->assertSame(AccessControlEntryInterface::USER_WILDCARD, $params['USER_WILDCARD']);
         $this->assertSame(['VIEW' => PermissionInterface::VIEW, 'EDIT' => PermissionInterface::EDIT], $params['permissions']);
         $this->assertSame([
             AccessControlEntryInterface::USER_WILDCARD => 'All users',
@@ -83,22 +82,25 @@ class PermissionViewTest extends TestCase
             [
                 'userType' => 'user',
                 'userId' => AccessControlEntryInterface::USER_WILDCARD,
-                'name' => AccessControlEntryInterface::USER_WILDCARD,
-                'objectId' => null,
+                'name' => 'All users',
+                'wildcard' => true,
+                'inherited' => true,
                 'permissions' => ['VIEW' => true, 'EDIT' => false],
             ],
             [
                 'userType' => 'user',
                 'userId' => 'u-1',
                 'name' => 'alice',
-                'objectId' => '42',
+                'wildcard' => false,
+                'inherited' => false,
                 'permissions' => ['VIEW' => true, 'EDIT' => true],
             ],
             [
                 'userType' => 'group',
                 'userId' => 'g-1',
                 'name' => 'editors',
-                'objectId' => '42',
+                'wildcard' => false,
+                'inherited' => false,
                 'permissions' => ['VIEW' => false, 'EDIT' => true],
             ],
         ], $params['aces']);
@@ -110,14 +112,17 @@ class PermissionViewTest extends TestCase
             ->expects($this->once())
             ->method('getObjectAces')
             ->with('pub', null)
-            ->willReturn([]);
+            ->willReturn([
+                $this->createAce(AccessControlEntryInterface::TYPE_GROUP_VALUE, 'g-1', null, PermissionInterface::VIEW),
+            ]);
         $this->em->expects($this->never())->method('getRepository');
 
         $params = $this->view->getViewParameters('pub', null);
 
-        $this->assertArrayNotHasKey('object_id', $params);
+        $this->assertNull($params['object_id']);
         $this->assertNull($params['object_title']);
-        $this->assertSame([], $params['aces']);
+        $this->assertCount(1, $params['aces']);
+        $this->assertFalse($params['aces'][0]['inherited']);
     }
 
     public function testEveryPermissionIsShownWhenNoneIsEnabled(): void

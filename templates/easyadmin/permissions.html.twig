@@ -1,0 +1,141 @@
+{#
+    Parameters: those of Alchemy\AclBundle\Admin\PermissionView::getViewParameters(), plus
+    - back_url (optional): the URL of the "Back" action
+    - global_permissions_url (optional, object page only): the URL of the page managing the
+      permissions on every object of the type
+#}
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block head_stylesheets %}
+    {{ parent() }}
+    {% guard function csp_nonce %}
+        <style nonce="{{ csp_nonce('style') }}">{{ source('@AlchemyAcl/easyadmin/permissions.css') }}</style>
+    {% else %}
+        <style>{{ source('@AlchemyAcl/easyadmin/permissions.css') }}</style>
+    {% endguard %}
+{% endblock %}
+
+{% block body_javascript %}
+    {{ parent() }}
+    {% guard function csp_nonce %}
+        <script nonce="{{ csp_nonce('script') }}">{{ source('@AlchemyAcl/easyadmin/permissions.js') }}</script>
+    {% else %}
+        <script>{{ source('@AlchemyAcl/easyadmin/permissions.js') }}</script>
+    {% endguard %}
+{% endblock %}
+
+{% block content_title %}
+    {% if object_id is null %}
+        Permissions on all <b>{{ object_type }}</b>
+    {% else %}
+        Permissions on {{ object_type }} <b>{{ object_title ?? object_id }}</b>
+    {% endif %}
+{% endblock %}
+
+{% block page_actions %}
+    {% if back_url ?? null %}
+        <twig:ea:Button htmlElement="a" href="{{ back_url }}">Back</twig:ea:Button>
+    {% endif %}
+    {% if object_id is not null and (global_permissions_url ?? null) %}
+        <twig:ea:Button htmlElement="a" href="{{ global_permissions_url }}">Permissions on all {{ object_type }}</twig:ea:Button>
+    {% endif %}
+{% endblock %}
+
+{% macro grantee_select(user_type, label, choices) %}
+    <div class="col-md-6 mb-3">
+        <label class="form-label" for="acl-{{ user_type }}-select">{{ label }}</label>
+        <select id="acl-{{ user_type }}-select"
+                class="form-select acl-grantee-select"
+                data-acl-user-type="{{ user_type }}"
+                data-ea-widget="ea-autocomplete"
+                data-ea-i18n-no-results-found="No results found">
+            <option value="">Select a {{ user_type }} to grant...</option>
+            {% for id, name in choices %}
+                <option value="{{ id }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+{% endmacro %}
+
+{% block main %}
+    {% import _self as acl %}
+
+    <div class="acl-permissions"
+         data-ace-url="{{ path('alchemy_acl_admin_ace') }}"
+         data-object-type="{{ object_type }}"
+         data-object-id="{{ object_id }}"
+         data-user-wildcard="{{ constant('Alchemy\\AclBundle\\Model\\AccessControlEntryInterface::USER_WILDCARD') }}">
+
+        {% if object_id is null %}
+            <div class="alert alert-warning">
+                These permissions apply to <b>every {{ object_type }}</b>.
+            </div>
+        {% endif %}
+
+        <div class="row">
+            {{ acl.grantee_select('group', 'Add a group', groups) }}
+            {{ acl.grantee_select('user', 'Add a user', users) }}
+        </div>
+
+        <template data-acl-row-template>
+            <tr>
+                <td class="acl-name"></td>
+                {% for name, value in permissions %}
+                    <td class="acl-perm">
+                        <input class="form-check-input" type="checkbox" value="{{ value }}" data-acl-permission aria-label="{{ name }}">
+                    </td>
+                {% endfor %}
+                <td class="acl-all">
+                    <input class="form-check-input" type="checkbox" data-acl-all aria-label="All">
+                </td>
+                <td class="text-end">
+                    <twig:ea:Button variant="danger" size="sm" type="button" data-acl-delete>Delete</twig:ea:Button>
+                </td>
+            </tr>
+        </template>
+
+        <table class="table datagrid">
+            <thead>
+            <tr>
+                <th><span>User / Group</span></th>
+                {% for name in permissions|keys %}
+                    <th class="acl-perm"><span>{{ name|replace({'_': ' '})|lower|capitalize }}</span></th>
+                {% endfor %}
+                <th class="acl-all"><span>All</span></th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for ace in aces %}
+                <tr class="acl-{{ ace.userType }}{{ ace.wildcard ? ' acl-wildcard' }}{{ ace.inherited ? ' acl-inherited' }}"
+                    data-acl-user-type="{{ ace.userType }}"
+                    data-acl-user-id="{{ ace.userId }}">
+                    <td class="acl-name">
+                        {{ ace.name }}
+                        {% if ace.inherited %}
+                            <twig:ea:Badge>on all {{ object_type }}</twig:ea:Badge>
+                        {% endif %}
+                    </td>
+                    {% for name, value in permissions %}
+                        <td class="acl-perm">
+                            <input class="form-check-input" type="checkbox" value="{{ value }}" data-acl-permission
+                                   aria-label="{{ name }}"
+                                   {%- if ace.permissions[name] %} checked{% endif %}
+                                   {%- if ace.inherited %} disabled{% endif %}>
+                        </td>
+                    {% endfor %}
+                    <td class="acl-all">
+                        <input class="form-check-input" type="checkbox" data-acl-all aria-label="All"
+                               {%- if ace.inherited %} disabled{% endif %}>
+                    </td>
+                    <td class="text-end">
+                        {% if not ace.inherited %}
+                            <twig:ea:Button variant="danger" size="sm" type="button" data-acl-delete>Delete</twig:ea:Button>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

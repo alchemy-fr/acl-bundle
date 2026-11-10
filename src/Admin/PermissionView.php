@@ -12,31 +12,35 @@ use Alchemy\AclBundle\Repository\UserRepositoryInterface;
 use Alchemy\AclBundle\Security\PermissionInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
+/**
+ * Builds the parameters of the EasyAdmin permission pages.
+ */
 class PermissionView
 {
     /**
      * @param string[]|null $enabledPermissions The permission names to show, null for all of them
      */
-    public function __construct(private readonly ObjectMapping $objectMapping, private readonly PermissionRepositoryInterface $repository, private readonly UserRepositoryInterface $userRepository, private readonly GroupRepositoryInterface $groupRepository, private readonly EntityManagerInterface $em, private readonly ?array $enabledPermissions)
-    {
+    public function __construct(
+        private readonly ObjectMapping $objectMapping,
+        private readonly PermissionRepositoryInterface $repository,
+        private readonly UserRepositoryInterface $userRepository,
+        private readonly GroupRepositoryInterface $groupRepository,
+        private readonly EntityManagerInterface $em,
+        private readonly ?array $enabledPermissions,
+    ) {
     }
 
+    /**
+     * @param string|null $id The object ID, null to manage the ACEs of every object of the type
+     */
     public function getViewParameters(string $objectKey, ?string $id): array
     {
         $permissions = [];
-        foreach ($this->enabledPermissions ?: array_keys(PermissionInterface::PERMISSIONS) as $key) {
-            $permissions[$key] = PermissionInterface::PERMISSIONS[$key];
+        foreach ($this->enabledPermissions ?: array_keys(PermissionInterface::PERMISSIONS) as $name) {
+            $permissions[$name] = PermissionInterface::PERMISSIONS[$name];
         }
 
-        $aces = [];
-        if (null !== $id) {
-            $aces = array_merge($aces, $this->repository->getObjectAces($objectKey, null));
-        }
-        $aces = array_merge($aces, $this->repository->getObjectAces($objectKey, $id));
-
-        $users = [
-            AccessControlEntryInterface::USER_WILDCARD => 'All users',
-        ];
+        $users = [AccessControlEntryInterface::USER_WILDCARD => 'All users'];
         foreach ($this->userRepository->getUsers() as $user) {
             $users[$user['id']] = $user['username'];
         }
@@ -45,37 +49,33 @@ class PermissionView
             $groups[$group['id']] = $group['name'];
         }
 
-        $aces = array_map(fn (AccessControlEntryInterface $ace): array => [
-            'userType' => $ace->getUserTypeString(),
-            'userId' => $ace->getUserId() ?? AccessControlEntryInterface::USER_WILDCARD,
-            'name' => $this->resolveName($ace, $users, $groups),
-            'objectId' => $ace->getObjectId(),
-            'permissions' => array_map($ace->hasPermission(...), $permissions),
-        ], $aces);
+        // On an object, the type-wide ACEs also apply: they are listed first, read-only
+        $aces = null !== $id ? $this->repository->getObjectAces($objectKey, null) : [];
+        $aces = array_merge($aces, $this->repository->getObjectAces($objectKey, $id));
 
-        $objectTitle = null;
-        if ($id) {
-            $object = $this->em->getRepository($this->objectMapping->getClassName($objectKey))->find($id);
-            if (null !== $object && method_exists($object, '__toString')) {
-                $objectTitle = (string) $object;
-            }
-        }
-
-        $params = [
-            'USER_WILDCARD' => AccessControlEntryInterface::USER_WILDCARD,
+        return [
             'permissions' => $permissions,
-            'aces' => $aces,
+            'aces' => array_map(fn (AccessControlEntryInterface $ace): array => [
+                'userType' => $ace->getUserTypeString(),
+                'userId' => $ace->getUserId() ?? AccessControlEntryInterface::USER_WILDCARD,
+                'name' => $this->resolveName($ace, $users, $groups),
+                'wildcard' => null === $ace->getUserId(),
+                'inherited' => null !== $id && null === $ace->getObjectId(),
+                'permissions' => array_map($ace->hasPermission(...), $permissions),
+            ], $aces),
             'users' => $users,
             'groups' => $groups,
             'object_type' => $objectKey,
-            'object_title' => $objectTitle,
+            'object_id' => $id,
+            'object_title' => null !== $id ? $this->getObjectTitle($objectKey, $id) : null,
         ];
+    }
 
-        if (null !== $id) {
-            $params['object_id'] = $id;
-        }
+    private function getObjectTitle(string $objectKey, string $id): ?string
+    {
+        $object = $this->em->getRepository($this->objectMapping->getClassName($objectKey))->find($id);
 
-        return $params;
+        return $object instanceof \Stringable ? (string) $object : null;
     }
 
     /**
@@ -86,7 +86,7 @@ class PermissionView
     {
         $userId = $ace->getUserId();
         if (null === $userId) {
-            return AccessControlEntryInterface::USER_WILDCARD;
+            return $users[AccessControlEntryInterface::USER_WILDCARD];
         }
 
         // The lists may be partial (e.g. paginated by the repositories)

@@ -1,0 +1,33 @@
+.acl-permissions th.acl-perm span {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+}
+
+.acl-permissions .acl-perm,
+.acl-permissions .acl-all {
+    width: 1px;
+    text-align: center;
+}
+
+.acl-permissions .form-check-input {
+    float: none;
+    margin: 0;
+}
+
+.acl-permissions tr.acl-group .acl-name,
+.acl-permissions tr.acl-wildcard .acl-name {
+    font-weight: 600;
+}
+
+.acl-permissions tr.acl-wildcard > td {
+    background-color: var(--bs-danger-bg-subtle);
+}
+
+.acl-permissions tr.acl-inherited > td {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+}
+
+.acl-permissions .acl-grantee-select {
+    max-width: 400px;
+}
