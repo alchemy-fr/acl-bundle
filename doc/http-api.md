@@ -60,7 +60,9 @@ curl "{HOST}/permissions/aces?userType=user&userId=u-42&objectType=publication&o
 ```
 
 A user without `ROLE_ADMIN` must pass an `objectType` (and usually an `objectId`): the list is
-restricted to the object, or to the type-wide ACEs, the authorization was checked on.
+restricted to the object, or to the type-wide ACEs, the authorization was checked on. Along
+with an `objectId`, `objectIdWildcard=1` only adds the type-wide ACEs when `ACL_READ` is also
+granted on the type (see [Authorization](#authorization)); otherwise it is ignored.
 
 ## `PUT /permissions/ace`
 

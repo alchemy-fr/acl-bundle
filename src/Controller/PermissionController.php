@@ -94,6 +94,14 @@ class PermissionController extends AbstractController
         if (!$this->isGranted('ROLE_ADMIN')) {
             $params['objectType'] = $objectType;
             $params['objectId'] = $objectId;
+
+            // The type-wide ACEs are only listed along with the object's when reading the type is granted too
+            if (
+                null !== $objectId
+                && !$this->isGranted(SetPermissionVoter::ACL_READ, new ObjectTypeSubject($objectType, $this->objectMapping->getClassName($objectType)))
+            ) {
+                unset($params['objectIdWildcard']);
+            }
         }
 
         if (!empty($params['userType'])) {
