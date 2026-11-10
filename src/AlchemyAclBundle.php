@@ -18,6 +18,7 @@ use Alchemy\AclBundle\Serializer\AceSerializer;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symfony\Component\Form\AbstractType;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
 class AlchemyAclBundle extends AbstractBundle
@@ -65,7 +66,9 @@ class AlchemyAclBundle extends AbstractBundle
         $services->set(AceSerializer::class);
         $services->set(PermissionController::class);
         $services->set(AclObjectDeleteListener::class);
-        $services->set(ObjectTypeFormType::class);
+        if (class_exists(AbstractType::class)) {
+            $services->set(ObjectTypeFormType::class);
+        }
         $services->set(PermissionView::class)
             ->arg('$enabledPermissions', '%alchemy_acl.enabled_permissions%');
 

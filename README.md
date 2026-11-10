@@ -12,7 +12,6 @@ EasyAdmin UI.
 
 ## Table of contents
 
-- [Requirements](#requirements)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Making your entities ACL-aware](#making-your-entities-acl-aware)
@@ -25,14 +24,6 @@ EasyAdmin UI.
 - [Admin UI (EasyAdmin)](#admin-ui-easyadmin)
 - [Development](#development)
 - [License](#license)
-
-## Requirements
-
-| Dependency   | Version          |
-|--------------|------------------|
-| PHP          | 8.5              |
-| Symfony      | 6.4 or 7.4       |
-| Doctrine ORM | 2.6 or 3.6       |
 
 ## Installation
 

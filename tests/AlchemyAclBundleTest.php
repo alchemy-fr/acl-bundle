@@ -20,6 +20,7 @@ use Alchemy\AclBundle\Tests\Mock\ObjectMock;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\Form\AbstractType;
 
 class AlchemyAclBundleTest extends TestCase
 {
@@ -41,7 +42,6 @@ class AlchemyAclBundleTest extends TestCase
             AceSerializer::class,
             PermissionController::class,
             AclObjectDeleteListener::class,
-            ObjectTypeFormType::class,
             PermissionView::class,
             AclVoter::class,
             SetPermissionVoter::class,
@@ -49,6 +49,8 @@ class AlchemyAclBundleTest extends TestCase
             $this->assertTrue($container->hasDefinition($id), sprintf('Service "%s" is not registered', $id));
             $this->assertTrue($container->getDefinition($id)->isAutowired(), sprintf('Service "%s" is not autowired', $id));
         }
+
+        $this->assertSame(class_exists(AbstractType::class), $container->hasDefinition(ObjectTypeFormType::class));
 
         $this->assertTrue($container->hasAlias(PermissionRepositoryInterface::class));
         $this->assertSame(DoctrinePermissionRepository::class, (string) $container->getAlias(PermissionRepositoryInterface::class));
