@@ -272,6 +272,26 @@ class PermissionManagerTest extends TestCase
         $this->assertSame(['v' => 1], $dispatched->getPreviousMetadata());
     }
 
+    public function testTheUpsertEventCarriesTheResultingMaskOfAnAppend(): void
+    {
+        $this->repository
+            ->expects($this->once())
+            ->method('updateOrCreateAce')
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', '42', PermissionInterface::EDIT, [], null, true)
+            ->willReturn($this->createAce(PermissionInterface::VIEW | PermissionInterface::EDIT));
+
+        $this->eventDispatcher
+            ->expects($this->once())
+            ->method('dispatch')
+            ->with($this->callback(function (AclUpsertEvent $event): bool {
+                $this->assertSame(PermissionInterface::VIEW | PermissionInterface::EDIT, $event->getPermissions());
+
+                return true;
+            }), AclUpsertEvent::NAME);
+
+        $this->manager->updateOrCreateAce(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', '42', PermissionInterface::EDIT, append: true);
+    }
+
     public function testUpdateOrCreateAceWithoutMetadataKeepsThoseOfTheAce(): void
     {
         $ace = $this->createAce(PermissionInterface::EDIT);
