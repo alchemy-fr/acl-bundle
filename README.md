@@ -365,7 +365,7 @@ The examples below assume the routes were imported under `/permissions`.
 | `objectId`   | The object ID. `null` or empty targets every object of the type.                             |
 | `mask`       | The sum of the granted permission bits                                                       |
 | `metadata`   | Free JSON object stored with the ACE (optional: when omitted, an existing ACE keeps its own) |
-| `parentId`   | Optional discriminator, see [Managing ACEs from PHP](#managing-aces-from-php)                |
+| `parentId`   | Optional discriminator, see [Managing ACEs from PHP](#managing-aces-from-php). Omitted means `NULL` |
 
 Responses are serialized ACEs. When the ACE targets a specific user or group, the payload
 also contains a `user` or `group` key filled by your repositories.
@@ -373,7 +373,7 @@ also contains a `user` or `group` key filled by your repositories.
 ### `GET /permissions/aces`
 
 Lists ACEs. Filters are passed as query parameters: `userType`, `userId`, `objectType`,
-`objectId`. An empty value or the string `null` matches `NULL` (for instance
+`objectId`, `parentId`. An empty value or the string `null` matches `NULL` (for instance
 `objectId=null` returns type-wide ACEs). Add `userIdWildcard=1` or `objectIdWildcard=1` to
 also include the wildcard ACEs alongside the ones matching the given ID.
 
