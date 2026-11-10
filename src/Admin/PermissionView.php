@@ -14,6 +14,9 @@ use Doctrine\ORM\EntityManagerInterface;
 
 class PermissionView
 {
+    /**
+     * @param string[]|null $enabledPermissions The permission names to show, null for all of them
+     */
     public function __construct(private readonly ObjectMapping $objectMapping, private readonly PermissionRepositoryInterface $repository, private readonly UserRepositoryInterface $userRepository, private readonly GroupRepositoryInterface $groupRepository, private readonly EntityManagerInterface $em, private readonly ?array $enabledPermissions)
     {
     }
@@ -21,7 +24,7 @@ class PermissionView
     public function getViewParameters(string $objectKey, ?string $id): array
     {
         $permissions = [];
-        foreach ($this->enabledPermissions as $key) {
+        foreach ($this->enabledPermissions ?: array_keys(PermissionInterface::PERMISSIONS) as $key) {
             $permissions[$key] = PermissionInterface::PERMISSIONS[$key];
         }
 
