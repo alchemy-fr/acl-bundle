@@ -72,6 +72,8 @@
             </div>
         {% endif %}
 
+        <div class="alert alert-danger d-none" role="alert" data-acl-error></div>
+
         <div class="row">
             {{ acl.grantee_select('group', 'Add a group', groups) }}
             {{ acl.grantee_select('user', 'Add a user', users) }}

@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tbody = root.querySelector('tbody');
     const rowTemplate = root.querySelector('template[data-acl-row-template]');
+    const errorBox = root.querySelector('[data-acl-error]');
     const objectType = root.dataset.objectType;
     const objectId = root.dataset.objectId || null;
 
@@ -19,12 +20,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function send(method, body) {
-        return fetch(root.dataset.aceUrl, {
-            method,
-            headers: {'Content-Type': 'application/json', Accept: 'application/json'},
-            body: JSON.stringify(body),
-        });
+    async function send(method, body) {
+        errorBox.classList.add('d-none');
+        try {
+            const response = await fetch(root.dataset.aceUrl, {
+                method,
+                headers: {'Content-Type': 'application/json', Accept: 'application/json'},
+                body: JSON.stringify(body),
+            });
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText}`);
+            }
+        } catch (e) {
+            errorBox.textContent = `The permissions could not be saved (${e.message}), reload the page to see their current state.`;
+            errorBox.classList.remove('d-none');
+
+            throw e;
+        }
     }
 
     function syncAllToggle(row) {
@@ -67,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.querySelectorAll('[data-acl-permission]').forEach(box => box.checked = input.checked);
         }
         syncAllToggle(row);
-        saveMask(row);
+        saveMask(row).catch(() => {});
     });
 
     root.addEventListener('click', event => {
@@ -77,8 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        row.remove();
-        send('DELETE', aceKey(row));
+        button.disabled = true;
+        send('DELETE', aceKey(row)).then(() => row.remove(), () => button.disabled = false);
     });
 
     root.querySelectorAll('select[data-acl-user-type]').forEach(select => {
@@ -107,8 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             row.querySelector('.acl-name').textContent = option.textContent;
 
-            tbody.prepend(row);
-            send('PUT', {...aceKey(row), mask: 0});
+            send('PUT', {...aceKey(row), mask: 0}).then(() => tbody.prepend(row), () => {});
         });
     });
 
