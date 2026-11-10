@@ -736,7 +736,6 @@ class PermissionControllerTest extends TestCase
                 'objectType' => 'pub',
                 'objectId' => self::OBJECT_ID,
                 'userIdWildcard' => '1',
-                'objectIdWildcard' => '1',
             ])
             ->willReturn([]);
 
@@ -745,6 +744,37 @@ class PermissionControllerTest extends TestCase
                 'objectType' => 'pub',
                 'objectId' => self::OBJECT_ID,
                 'userIdWildcard' => '1',
+                'objectIdWildcard' => '1',
+            ]),
+            $repository,
+            $this->serializer,
+        );
+    }
+
+    public function testIndexAcesListsTheTypeWideAcesOfAnObjectWhenReadingTheTypeIsGranted(): void
+    {
+        $object = new ObjectMock(self::OBJECT_ID, 'u-1');
+        $this->em->method('find')->with(ObjectMock::class, self::OBJECT_ID)->willReturn($object);
+        $this->authorizationChecker
+            ->method('isGranted')
+            ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_READ === $attribute
+                && ($subject === $object || $subject instanceof ObjectTypeSubject));
+
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository
+            ->expects($this->once())
+            ->method('findAcesByParams')
+            ->with([
+                'objectType' => 'pub',
+                'objectId' => self::OBJECT_ID,
+                'objectIdWildcard' => '1',
+            ])
+            ->willReturn([]);
+
+        $this->controller->indexAces(
+            Request::create('/permissions/aces', 'GET', [
+                'objectType' => 'pub',
+                'objectId' => self::OBJECT_ID,
                 'objectIdWildcard' => '1',
             ]),
             $repository,
