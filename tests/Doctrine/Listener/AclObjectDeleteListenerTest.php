@@ -65,6 +65,31 @@ class AclObjectDeleteListenerTest extends TestCase
         $listener->postRemove(new PostRemoveEventArgs($object, $this->createMock(EntityManagerInterface::class)));
     }
 
+    public function testACancelledRemovalDoesNotDeleteTheAcesOfAnotherObject(): void
+    {
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository->expects($this->never())->method('deleteAcesByParams');
+
+        $listener = new AclObjectDeleteListener(new ObjectMapping(['pub' => ObjectMock::class]), $repository);
+        $em = $this->createMock(EntityManagerInterface::class);
+
+        // Removed, then persisted again or detached: postRemove never comes for it
+        $object = new ObjectMock('42');
+        $listener->preRemove(new PreRemoveEventArgs($object, $em));
+        $objectId = spl_object_id($object);
+        unset($object);
+
+        // Another object gets the handle PHP freed
+        $others = [];
+        do {
+            $other = new \stdClass();
+            $others[] = $other;
+        } while (spl_object_id($other) !== $objectId && count($others) < 1000);
+        $this->assertSame($objectId, spl_object_id($other));
+
+        $listener->postRemove(new PostRemoveEventArgs($other, $em));
+    }
+
     public function testNonAclObjectsAreIgnored(): void
     {
         $repository = $this->createMock(PermissionRepositoryInterface::class);

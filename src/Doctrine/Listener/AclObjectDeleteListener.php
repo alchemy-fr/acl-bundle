@@ -21,14 +21,18 @@ use Doctrine\ORM\Events;
 final class AclObjectDeleteListener
 {
     /**
-     * @var array<int, array{objectType: string, objectId: string}>
+     * Weak keys: an entry whose removal is never flushed (persisted again, detached,
+     * failed flush) goes away with its object, and cannot match another object.
+     *
+     * @var \WeakMap<object, array{objectType: string, objectId: string}>
      */
-    private array $pendingDeletions = [];
+    private readonly \WeakMap $pendingDeletions;
 
     public function __construct(
         private readonly ObjectMapping $objectMapping,
         private readonly PermissionRepositoryInterface $permissionRepository,
     ) {
+        $this->pendingDeletions = new \WeakMap();
     }
 
     public function preRemove(PreRemoveEventArgs $args): void
@@ -38,7 +42,7 @@ final class AclObjectDeleteListener
             return;
         }
 
-        $this->pendingDeletions[spl_object_id($object)] = [
+        $this->pendingDeletions[$object] = [
             'objectType' => $this->objectMapping->getObjectKey($object),
             'objectId' => $object->getId(),
         ];
@@ -46,13 +50,13 @@ final class AclObjectDeleteListener
 
     public function postRemove(PostRemoveEventArgs $args): void
     {
-        $key = spl_object_id($args->getObject());
-        if (!isset($this->pendingDeletions[$key])) {
+        $object = $args->getObject();
+        if (!isset($this->pendingDeletions[$object])) {
             return;
         }
 
-        $params = $this->pendingDeletions[$key];
-        unset($this->pendingDeletions[$key]);
+        $params = $this->pendingDeletions[$object];
+        unset($this->pendingDeletions[$object]);
 
         $this->permissionRepository->deleteAcesByParams($params);
     }
