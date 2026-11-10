@@ -1,518 +1,131 @@
 # Alchemy ACL bundle
 
 [![CI](https://github.com/alchemy-fr/acl-bundle/actions/workflows/ci.yaml/badge.svg)](https://github.com/alchemy-fr/acl-bundle/actions/workflows/ci.yaml)
+[![Latest Stable Version](https://img.shields.io/packagist/v/alchemy/acl-bundle.svg)](https://packagist.org/packages/alchemy/acl-bundle)
+[![PHP Version](https://img.shields.io/packagist/dependency-v/alchemy/acl-bundle/php.svg)](https://packagist.org/packages/alchemy/acl-bundle)
+[![License](https://img.shields.io/packagist/l/alchemy/acl-bundle.svg)](#license)
 
-Lightweight access control lists for Symfony applications.
+**Per-object permissions for Symfony and Doctrine, in a single table.**
 
-The bundle stores **access control entries** (ACEs) in a single Doctrine table. An ACE
-grants a bitmask of permissions to a *user* or a *group*, on one object or on every
-object of a type. It ships with a Symfony voter, a service to check and manage
-permissions, a helper to filter Doctrine queries by ACL, an HTTP API and an optional
-EasyAdmin UI.
+Symfony's roles and voters answer *"is this user an editor?"*. Many applications also need
+to answer *"can this user edit **this** document?"*, and to let users share their own
+objects with other users or groups. This bundle does exactly that, without the weight of a
+full ACL framework: one Doctrine table, one service, one voter.
 
-## Table of contents
+```php
+// Alice shares a publication with the "marketing" group
+$permissionManager->grantGroupOnObject($marketingGroupId, $publication, PermissionInterface::VIEW | PermissionInterface::EDIT);
 
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Making your entities ACL-aware](#making-your-entities-acl-aware)
-- [Permissions](#permissions)
-- [Checking permissions](#checking-permissions)
-- [Managing ACEs from PHP](#managing-aces-from-php)
-- [Filtering Doctrine queries](#filtering-doctrine-queries)
-- [Events](#events)
-- [HTTP API](#http-api)
-- [Admin UI (EasyAdmin)](#admin-ui-easyadmin)
-- [Development](#development)
-- [License](#license)
+// Anywhere in the application
+$this->denyAccessUnlessGranted((string) PermissionInterface::EDIT, $publication);
+```
 
-## Installation
+## Features
+
+- **Users, groups and everybody**: grant permissions to a user, to a group, or to all users
+  at once.
+- **One object or a whole type**: an entry targets a single object or every object of a type
+  (*"the editors group can view every publication"*).
+- **Ownership out of the box**: the owner of an object is granted everything on it.
+- **Bitmask permissions**: 18 predefined permissions (`VIEW`, `EDIT`, `DELETE`, `SHARE`…)
+  combined in one integer, checked with a single bitwise operation.
+- **Symfony Security integration**: a voter, so `isGranted()`, `#[IsGranted]` and Twig's
+  `is_granted()` work on your entities.
+- **Doctrine query filtering**: list only the objects a user is allowed to see, with one
+  join computed by the database, instead of loading everything and filtering in PHP.
+- **Events**: every change dispatches an event with the previous and the new state, ready for
+  audit logs or cache invalidation.
+- **HTTP API**: list, create, update and delete permissions over JSON, protected by voters
+  you can extend.
+- **Admin UI**: an optional EasyAdmin page with a checkbox matrix to manage the permissions of
+  one object or of a whole type.
+- **Automatic cleanup**: the permissions of an object are deleted along with it.
+- **Bring your own users**: the bundle does not own your users or groups; two small
+  interfaces connect it to any user provider (Doctrine, LDAP, OAuth/OIDC, a remote API…).
+
+## Why this bundle?
+
+| | Roles & voters | Symfony ACL (`symfony/acl-bundle`) | **Alchemy ACL bundle** |
+|---|---|---|---|
+| Per-object permissions | Hand-written in each voter | Yes | Yes |
+| Groups | Hand-written | No (roles only) | Yes |
+| Storage | — | Several tables, object identities | One table |
+| List the objects a user can see | Hand-written queries | Not provided | `joinAcl()` on any query |
+| HTTP API, admin UI, events | — | — | Included |
+
+It fits applications where users own content and share it: document or asset management,
+publishing platforms, collaborative tools, multi-tenant back offices.
+
+## Requirements
+
+- PHP 8.5 or later
+- Symfony 6.4, 7.4 or 8.x
+- Doctrine ORM 2.14+ or 3.6+, with `ramsey/uuid-doctrine`
+- Protected entities identified by a UUID
+- Optional: EasyAdmin 5 for the admin UI, `symfony/form` for the form types
+
+## Quick start
 
 ```bash
 composer require alchemy/acl-bundle
 ```
 
-Register the bundle if Flex did not do it for you:
-
-```php
-// config/bundles.php
-return [
-    // ...
-    Alchemy\AclBundle\AlchemyAclBundle::class => ['all' => true],
-];
-```
-
-The `AccessControlEntry` entity uses the `uuid` DBAL type from `ramsey/uuid-doctrine`.
-Register it once and let Doctrine's `auto_mapping` discover the entity:
-
-```yaml
-# config/packages/doctrine.yaml
-doctrine:
-    dbal:
-        types:
-            uuid: Ramsey\Uuid\Doctrine\UuidType
-    orm:
-        auto_mapping: true
-```
-
-Then create the table:
-
-```bash
-bin/console doctrine:migrations:diff && bin/console doctrine:migrations:migrate
-```
-
-Finally import the API routes (the prefix is up to you):
-
-```yaml
-# config/routes/alchemy_acl.yaml
-alchemy_acl_api:
-    resource: '@AlchemyAclBundle/config/routing/permissions_api.yaml'
-    prefix: /permissions
-```
-
-## Configuration
-
-### Objects
-
-Declare the entities you want to protect. The key is the `objectType` used everywhere
-(database, API, events), the value is the entity class. Subclasses and Doctrine proxies
-of a mapped class resolve to the same `objectType`.
+Declare the entities to protect:
 
 ```yaml
 # config/packages/alchemy_acl.yaml
 alchemy_acl:
     objects:
         publication: App\Entity\Publication
-        asset: App\Entity\Asset
-
-    # Optional: the permissions offered by the admin UI.
-    # Default: [VIEW, CREATE, EDIT, DELETE, OPERATOR, OWNER]
-    enabled_permissions: [VIEW, EDIT, DELETE]
 ```
 
-### User and group repositories
-
-The bundle knows nothing about your users. Provide two services by aliasing the bundle
-interfaces to your own implementations:
-
-```yaml
-# config/services.yaml
-services:
-    Alchemy\AclBundle\Repository\UserRepositoryInterface: '@App\Repository\UserRepository'
-    Alchemy\AclBundle\Repository\GroupRepositoryInterface: '@App\Repository\GroupRepository'
-```
+Implement `AclObjectInterface` on them and `AclUserInterface` on your security user:
 
 ```php
-namespace Alchemy\AclBundle\Repository;
-
-interface UserRepositoryInterface
-{
-    /** @return array<array{id: string, username: string}> */
-    public function getUsers(array $options = []): array;
-
-    /** @return array{id: string, username: string}|null */
-    public function getUser(string $userId, array $options = []): ?array;
-
-    /** @return string[] The IDs of the groups the user belongs to */
-    public function getAclGroupsId(AclUserInterface $user): array;
-}
-
-interface GroupRepositoryInterface
-{
-    /** @return array<array{id: string, name: string}> */
-    public function getGroups(array $options = []): array;
-
-    /** @return array{id: string, name: string}|null */
-    public function getGroup(string $groupId, array $options = []): ?array;
-}
-```
-
-`getAclGroupsId()` is called on every permission check, so make it cheap (cache it if
-needed). The other methods are only used by the API serializer and the admin UI.
-
-## Making your entities ACL-aware
-
-Protected entities implement `AclObjectInterface`. Their `getId()` must return a UUID: the
-ACE table stores the object id in a `uuid` column (a native `UUID` on PostgreSQL), which
-lets `joinAcl()` compare it with the id of the entity. The owner returned by
-`getAclOwnerId()` is granted everything on the object without any ACE.
-
-```php
-use Alchemy\AclBundle\AclObjectInterface;
-
 class Publication implements AclObjectInterface
 {
-    public function getId(): string
-    {
-        return $this->id->toString();
-    }
-
-    public function getAclOwnerId(): string
-    {
-        return $this->owner->getId();
-    }
+    public function getId(): string { return $this->id->toString(); }
+    public function getAclOwnerId(): string { return $this->owner->getId(); }
 }
-```
-
-Your security user implements `AclUserInterface` in addition to Symfony's `UserInterface`:
-
-```php
-use Alchemy\AclBundle\Model\AclUserInterface;
-use Symfony\Component\Security\Core\User\UserInterface;
 
 class User implements UserInterface, AclUserInterface
 {
-    public function getId(): string
-    {
-        return $this->id;
-    }
+    public function getId(): string { return $this->id; }
 }
 ```
 
-## Permissions
-
-Permissions are bits. An ACE stores their sum in its `mask`. The constants live in
-`Alchemy\AclBundle\Security\PermissionInterface`:
-
-| Name             | Value  | Name              | Value   |
-|------------------|-------:|-------------------|--------:|
-| `VIEW`           | 1      | `CHILD_VIEW`      | 512     |
-| `CREATE`         | 2      | `CHILD_CREATE`    | 1024    |
-| `EDIT`           | 4      | `CHILD_EDIT`      | 2048    |
-| `DELETE`         | 8      | `CHILD_DELETE`    | 4096    |
-| `UNDELETE`       | 16     | `CHILD_UNDELETE`  | 8192    |
-| `OPERATOR`       | 32     | `CHILD_OPERATOR`  | 16384   |
-| `MASTER`         | 64     | `CHILD_MASTER`    | 32768   |
-| `OWNER`          | 128    | `CHILD_OWNER`     | 65536   |
-| `SHARE`          | 256    | `CHILD_SHARE`     | 131072  |
-
-Permissions are independent: `EDIT` does not imply `VIEW`. A mask of `7` grants
-`VIEW`, `CREATE` and `EDIT`. The `CHILD_*` permissions have no built-in behaviour; they
-are here for applications that want to express rights on children of an object.
-
-### Wildcards
-
-- **All users**: an ACE with a `NULL` `userId` applies to everybody. Through the API and
-  the admin UI, send `AccessControlEntryInterface::USER_WILDCARD` (`__ALL_USERS__`) as the
-  `userId`.
-- **All objects of a type**: an ACE with a `NULL` `objectId` applies to every object of
-  its `objectType`.
-
-### How a check is resolved
-
-For a user, an object and a permission, access is granted if any of the following holds:
-
-1. the user is the owner of the object (see `isGranted(..., ownershipGrants: false)` to
-   disable this);
-2. an ACE carrying the permission targets the user, one of the user's groups, or all users,
-   on this object or on the whole object type.
-
-## Checking permissions
-
-### With the Symfony voter
-
-`AclVoter` votes on any `AclObjectInterface` when the attribute is a numeric permission:
-
-```php
-use Alchemy\AclBundle\Security\PermissionInterface;
-
-// In a controller
-$this->denyAccessUnlessGranted((string) PermissionInterface::EDIT, $publication);
-
-// With the attribute
-#[IsGranted('4', subject: 'publication')]
-public function edit(Publication $publication): Response
-```
-
-```twig
-{% if is_granted('4', publication) %}
-    <a href="{{ path('publication_edit', {id: publication.id}) }}">Edit</a>
-{% endif %}
-```
-
-### With the `PermissionManager`
-
-```php
-use Alchemy\AclBundle\Security\PermissionManager;
-use Alchemy\AclBundle\Security\PermissionInterface;
-
-public function __construct(private PermissionManager $permissionManager) {}
-
-// One permission
-$this->permissionManager->isGranted($user, $publication, PermissionInterface::EDIT);
-
-// Any of several permissions
-$this->permissionManager->isGranted($user, $publication, [PermissionInterface::EDIT, PermissionInterface::OPERATOR]);
-
-// Ignore ownership, rely on ACEs only
-$this->permissionManager->isGranted($user, $publication, PermissionInterface::EDIT, ownershipGrants: false);
-
-// Who can see this object?
-$userIds = $this->permissionManager->getAllowedUsers($publication, PermissionInterface::VIEW);
-$groupIds = $this->permissionManager->getAllowedGroups($publication, PermissionInterface::VIEW);
-```
-
-The manager caches the ACEs it loads per user and object for the lifetime of the request.
-Writing through the manager clears the whole cache, and the manager is reset between two
-requests or two Messenger messages (`kernel.reset`). Call `resetCache()` if you change
-ACEs by other means (direct SQL, another process...) during a request or a message.
-
-## Managing ACEs from PHP
-
-```php
-use Alchemy\AclBundle\Model\AccessControlEntryInterface;
-use Alchemy\AclBundle\Security\PermissionInterface;
-
-// Grant a user or a group on one object (replaces the existing mask)
-$permissionManager->grantUserOnObject($userId, $publication, PermissionInterface::VIEW | PermissionInterface::EDIT);
-$permissionManager->grantGroupOnObject($groupId, $publication, PermissionInterface::VIEW);
-
-// Full control: object type wide, append to the existing mask, attach metadata
-$permissionManager->updateOrCreateAce(
-    AccessControlEntryInterface::TYPE_GROUP_VALUE,
-    $groupId,
-    'publication',
-    null,                        // every publication
-    PermissionInterface::VIEW,
-    metadata: ['granted_by' => $adminId], // null keeps the metadata of an existing ACE
-    append: true,                // keep the bits already set
-);
-
-// Remove an ACE
-$permissionManager->deleteAce(AccessControlEntryInterface::TYPE_USER_VALUE, $userId, 'publication', $publication->getId());
-
-// Read
-$permissionManager->getAces($user, $publication);      // ACEs that apply to this user on this object
-$permissionManager->getObjectAces($publication);       // every ACE on this object, plus type-wide ones
-```
-
-An optional `parentId` lets you keep several ACEs for the same user and object, one per
-"source" (for instance the collection the object was shared through). The unique
-constraint is on `(userType, userId, objectType, objectId, parentId)`.
-
-### Automatic cleanup
-
-`AclObjectDeleteListener` deletes every ACE of a mapped object once Doctrine has removed
-the object (the object id is read on `preRemove`, the ACEs are deleted on `postRemove`).
-
-## Filtering Doctrine queries
-
-To list only the objects a user can see, join the ACL table with the static helper:
-
-```php
-use Alchemy\AclBundle\Entity\AccessControlEntryRepository;
-use Alchemy\AclBundle\Security\PermissionInterface;
-
-$qb = $this->createQueryBuilder('p');
-
-AccessControlEntryRepository::joinAcl(
-    $qb,
-    $user->getId(),
-    $userRepository->getAclGroupsId($user),
-    'publication',              // objectType
-    'p',                        // alias of the protected entity in the query
-    PermissionInterface::VIEW,
-);
-```
-
-The helper adds an `INNER JOIN` (pass `inner: false` for a `LEFT JOIN`) that matches ACEs
-on the object or on the whole type, for the user, their groups or all users, and having
-the requested permission bits. The `aceAlias` and `paramPrefix` arguments let you join the
-ACL table several times in one query.
-
-## Events
-
-Every write through the `PermissionManager` (including the HTTP API) dispatches an event
-with the previous state of the ACE, so you can audit changes or refresh caches:
-
-| Event                                   | Name         | Extra getters                                         |
-|-----------------------------------------|--------------|-------------------------------------------------------|
-| `Alchemy\AclBundle\Event\AclUpsertEvent` | `acl.upsert` | `getPermissions()`, `getMetadata()`                   |
-| `Alchemy\AclBundle\Event\AclDeleteEvent` | `acl.delete` |                                                       |
-
-Both expose `getUserType()`, `getUserId()`, `getObjectType()`, `getObjectId()`,
-`getPreviousPermissions()` and `getPreviousMetadata()`. The previous values are `null`
-when the ACE did not exist before. `getPermissions()` and `getMetadata()` are those the ACE
-holds after the write, also when `append: true` only added bits.
-
-```php
-use Alchemy\AclBundle\Event\AclUpsertEvent;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
-
-#[AsEventListener(event: AclUpsertEvent::NAME)]
-public function onAclUpsert(AclUpsertEvent $event): void
-{
-    // ...
-}
-```
-
-## HTTP API
-
-The examples below assume the routes were imported under `/permissions`.
-
-### Fields
-
-| Field        | Description                                                                                  |
-|--------------|----------------------------------------------------------------------------------------------|
-| `userType`   | `user` or `group`                                                                            |
-| `userId`     | The user or group ID. Send `__ALL_USERS__` to target everybody (stored as `NULL`).           |
-| `objectType` | One of the keys declared in `alchemy_acl.objects`                                            |
-| `objectId`   | The object UUID. `null` or empty targets every object of the type.                           |
-| `mask`       | The sum of the granted permission bits                                                       |
-| `metadata`   | Free JSON object stored with the ACE (optional: when omitted, an existing ACE keeps its own) |
-| `parentId`   | Optional discriminator, see [Managing ACEs from PHP](#managing-aces-from-php). Omitted means `NULL` |
-
-Responses are serialized ACEs. When the ACE targets a specific user or group, the payload
-also contains a `user` or `group` key filled by your repositories.
-
-### `GET /permissions/aces`
-
-Lists ACEs. Filters are passed as query parameters: `userType`, `userId`, `objectType`,
-`objectId`, `parentId`. An empty value or the string `null` matches `NULL` (for instance
-`objectId=null` returns type-wide ACEs). Add `userIdWildcard=1` or `objectIdWildcard=1` to
-also include the wildcard ACEs alongside the ones matching the given ID.
-
-```bash
-# ACEs of an object, including type-wide ones
-curl "{HOST}/permissions/aces?objectType=publication&objectId=9f0c4d1e-7b2a-4c3e-8d5f-1a2b3c4d5e6f&objectIdWildcard=1"
-
-# ACEs of a group
-curl "{HOST}/permissions/aces?userType=group&userId=g-42"
-
-# ACEs of a user on an object
-curl "{HOST}/permissions/aces?userType=user&userId=u-42&objectType=publication&objectId=9f0c4d1e-7b2a-4c3e-8d5f-1a2b3c4d5e6f"
-```
-
-### `PUT /permissions/ace`
-
-Creates or replaces an ACE. The body must be JSON (`Content-Type: application/json`): a
-form-encoded body gets a `415`, since a cross-site form could send one without a CORS
-preflight.
-
-```json
-{
-    "userType": "user",
-    "userId": "u-42",
-    "objectType": "publication",
-    "objectId": "9f0c4d1e-7b2a-4c3e-8d5f-1a2b3c4d5e6f",
-    "mask": 7,
-    "metadata": {"granted_by": "admin"}
-}
-```
-
-### `DELETE /permissions/ace`
-
-```json
-{
-    "userType": "user",
-    "userId": "u-42",
-    "objectType": "publication",
-    "objectId": "9f0c4d1e-7b2a-4c3e-8d5f-1a2b3c4d5e6f"
-}
-```
-
-### Authorization
-
-- `ROLE_ADMIN` can do everything.
-- Otherwise the application's voters are asked for `ACL_READ` (list) or `ACL_WRITE`
-  (create, update, delete). The bundled `SetPermissionVoter` grants both to the owner of
-  the object.
-- When `objectId` is empty there is no object to vote on: the subject is an
-  `Alchemy\AclBundle\Security\ObjectTypeSubject` carrying the `objectType` and its class.
-  The bundle grants nothing on it by default, so write a voter if non-admins must manage
-  type-wide ACEs:
-
-```php
-use Alchemy\AclBundle\Security\ObjectTypeSubject;
-use Alchemy\AclBundle\Security\Voter\SetPermissionVoter;
-use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
-use Symfony\Component\Security\Core\Authorization\Voter\Vote;
-use Symfony\Component\Security\Core\Authorization\Voter\Voter;
-
-class ObjectTypeAclVoter extends Voter
-{
-    protected function supports(string $attribute, mixed $subject): bool
-    {
-        return SetPermissionVoter::ACL_WRITE === $attribute && $subject instanceof ObjectTypeSubject;
-    }
-
-    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
-    {
-        return 'publication' === $subject->objectType
-            && in_array('ROLE_PUBLICATION_MANAGER', $token->getRoleNames(), true);
-    }
-}
-```
-
-Invalid requests get a `400` before any authorization check: an unknown `objectType`, an
-`objectId` which is not a UUID, a missing or unknown `userType`, a missing `userId`, a
-`mask` which is not a non-negative integer or a `metadata` which is not an object. Denied
-requests get a `403`.
-
-## Admin UI (EasyAdmin)
-
-The bundle ships EasyAdmin (3 or later) pages to manage the permissions of one object or of
-a whole type with a checkbox matrix (`@AlchemyAcl/easyadmin3/entity/acl.html.twig` and
-`@AlchemyAcl/easyadmin3/global/acl.html.twig`). They call the API through the admin
-routes, which you import next to your admin area:
-
-```yaml
-# config/routes/alchemy_acl_admin.yaml
-alchemy_acl_admin:
-    resource: '@AlchemyAclBundle/config/routing/permissions_admin.yaml'
-    prefix: /admin/permissions
-```
-
-Render them from your own admin controllers with the parameters built by `PermissionView`.
-The object page links the type-wide ACEs to the type page, through a route your application
-must name `alchemy_admin_acl_global_permissions`, with a `type` parameter. It also shows a
-"Back" link when you pass a `back_url`:
-
-```php
-use Alchemy\AclBundle\Admin\PermissionView;
-
-#[Route('/acl/aces/{type}/global', name: 'alchemy_admin_acl_global_permissions')]
-public function globalPermissions(PermissionView $view, string $type): Response
-{
-    return $this->render('@AlchemyAcl/easyadmin3/global/acl.html.twig', $view->getViewParameters($type, null));
-}
-
-public function objectPermissions(PermissionView $view, string $type, string $id, string $backUrl): Response
-{
-    return $this->render(
-        '@AlchemyAcl/easyadmin3/entity/acl.html.twig',
-        ['back_url' => $backUrl] + $view->getViewParameters($type, $id),
-    );
-}
-```
-
-The checkboxes shown are the ones listed in `alchemy_acl.enabled_permissions`.
-
-## Development
-
-Install the dependencies and run the test suite:
-
-```bash
-composer install
-composer test
-```
-
-Code style and refactoring rules:
-
-```bash
-composer cs      # php-cs-fixer
-composer rector  # rector
-```
-
-Without a local PHP 8.5, the same commands run in Docker:
-
-```bash
-docker run --rm -v "$PWD":/app -w /app php:8.5-cli vendor/bin/phpunit
-```
-
-The suite is made of unit tests: the Doctrine repository, the entity manager and the
-security layer are replaced by mocks. Only `AccessControlEntryMappingTest` runs the entity
-mapping against an in-memory SQLite database (it is skipped without `pdo_sqlite`).
+Tell the bundle where your users and groups are, by aliasing
+`UserRepositoryInterface` and `GroupRepositoryInterface` to your services, then create the
+ACL table with a Doctrine migration. You can now grant and check permissions.
+
+The full walkthrough is in the [installation guide](doc/installation.md).
+
+## Documentation
+
+1. [Installation and configuration](doc/installation.md)
+2. [Concepts: entries, permissions and resolution](doc/concepts.md)
+3. [Checking permissions](doc/checking-permissions.md)
+4. [Managing permissions from PHP](doc/managing-permissions.md)
+5. [Filtering Doctrine queries](doc/query-filtering.md)
+6. [Events](doc/events.md)
+7. [HTTP API](doc/http-api.md)
+8. [Admin UI (EasyAdmin) and form types](doc/admin-ui.md)
+9. [Contributing](doc/contributing.md)
+
+## Versioning
+
+The bundle follows [semantic versioning](https://semver.org/). Releases and their notes are
+listed on the [GitHub releases page](https://github.com/alchemy-fr/acl-bundle/releases)
+and on [Packagist](https://packagist.org/packages/alchemy/acl-bundle).
+
+## Contributing
+
+Bug reports and pull requests are welcome on
+[GitHub](https://github.com/alchemy-fr/acl-bundle/issues). See the
+[contributing guide](doc/contributing.md) to set up the project and run the tests.
 
 ## License
 
-MIT
+This bundle is released under the MIT license.
+
+Developed and maintained by [Alchemy](https://www.alchemy.fr/).
