@@ -450,9 +450,9 @@ requests get a `403`.
 
 ## Admin UI (EasyAdmin)
 
-The bundle ships templates to manage the permissions of one object or of a whole
-type with a checkbox matrix (`@AlchemyAcl/permissions/entity/acl.html.twig` and
-`@AlchemyAcl/permissions/global/acl.html.twig`). They call the API through the admin
+The bundle ships EasyAdmin (3 or later) pages to manage the permissions of one object or of
+a whole type with a checkbox matrix (`@AlchemyAcl/easyadmin3/entity/acl.html.twig` and
+`@AlchemyAcl/easyadmin3/global/acl.html.twig`). They call the API through the admin
 routes, which you import next to your admin area:
 
 ```yaml
@@ -462,16 +462,25 @@ alchemy_acl_admin:
     prefix: /admin/permissions
 ```
 
-Render them from your own admin controller with the parameters built by `PermissionView`:
+Render them from your own admin controllers with the parameters built by `PermissionView`.
+The object page links the type-wide ACEs to the type page, through a route your application
+must name `alchemy_admin_acl_global_permissions`, with a `type` parameter. It also shows a
+"Back" link when you pass a `back_url`:
 
 ```php
 use Alchemy\AclBundle\Admin\PermissionView;
 
-public function permissions(PermissionView $view, string $type, ?string $id = null): Response
+#[Route('/acl/aces/{type}/global', name: 'alchemy_admin_acl_global_permissions')]
+public function globalPermissions(PermissionView $view, string $type): Response
+{
+    return $this->render('@AlchemyAcl/easyadmin3/global/acl.html.twig', $view->getViewParameters($type, null));
+}
+
+public function objectPermissions(PermissionView $view, string $type, string $id, string $backUrl): Response
 {
     return $this->render(
-        null === $id ? '@AlchemyAcl/permissions/global/acl.html.twig' : '@AlchemyAcl/permissions/entity/acl.html.twig',
-        $view->getViewParameters($type, $id),
+        '@AlchemyAcl/easyadmin3/entity/acl.html.twig',
+        ['back_url' => $backUrl] + $view->getViewParameters($type, $id),
     );
 }
 ```
