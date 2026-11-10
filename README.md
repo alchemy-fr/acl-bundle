@@ -297,8 +297,8 @@ constraint is on `(userType, userId, objectType, objectId, parentId)`.
 
 ### Automatic cleanup
 
-`AclObjectDeleteListener` listens to Doctrine's `postRemove` event and deletes every ACE
-of a mapped object when the object is removed.
+`AclObjectDeleteListener` deletes every ACE of a mapped object once Doctrine has removed
+the object (the object id is read on `preRemove`, the ACEs are deleted on `postRemove`).
 
 ## Filtering Doctrine queries
 
