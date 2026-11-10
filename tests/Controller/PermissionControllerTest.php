@@ -31,6 +31,8 @@ use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 class PermissionControllerTest extends TestCase
 {
+    private const string OBJECT_ID = '0b9e6c1a-1111-4a2b-9c3d-123456789abc';
+
     private PermissionManager&MockObject $permissionManager;
     private EntityManagerInterface&MockObject $em;
     private AuthorizationCheckerInterface&MockObject $authorizationChecker;
@@ -72,7 +74,7 @@ class PermissionControllerTest extends TestCase
                 AccessControlEntryInterface::TYPE_USER_VALUE,
                 'u-1',
                 'pub',
-                'pub-42',
+                self::OBJECT_ID,
                 PermissionInterface::VIEW | PermissionInterface::EDIT,
                 ['reason' => 'shared'],
             )
@@ -82,7 +84,7 @@ class PermissionControllerTest extends TestCase
             'userType' => 'user',
             'userId' => 'u-1',
             'objectType' => 'pub',
-            'objectId' => 'pub-42',
+            'objectId' => self::OBJECT_ID,
             'mask' => PermissionInterface::VIEW | PermissionInterface::EDIT,
             'metadata' => ['reason' => 'shared'],
         ]), $this->serializer);
@@ -151,14 +153,14 @@ class PermissionControllerTest extends TestCase
         $this->permissionManager
             ->expects($this->once())
             ->method('updateOrCreateAce')
-            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', 'pub-42', PermissionInterface::VIEW, [])
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', self::OBJECT_ID, PermissionInterface::VIEW, [])
             ->willReturn($this->createAce());
 
         $this->controller->setAce($this->jsonRequest('PUT', [
             'userType' => 'user',
             'userId' => 'u-1',
             'objectType' => 'pub',
-            'objectId' => 'pub-42',
+            'objectId' => self::OBJECT_ID,
             'mask' => PermissionInterface::VIEW,
             'metadata' => [],
         ]), $this->serializer);
@@ -166,8 +168,8 @@ class PermissionControllerTest extends TestCase
 
     public function testOwnerOfTheObjectCanSetAnAce(): void
     {
-        $object = new ObjectMock('pub-42', 'u-1');
-        $this->em->method('find')->with(ObjectMock::class, 'pub-42')->willReturn($object);
+        $object = new ObjectMock(self::OBJECT_ID, 'u-1');
+        $this->em->method('find')->with(ObjectMock::class, self::OBJECT_ID)->willReturn($object);
         $this->authorizationChecker
             ->method('isGranted')
             ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_WRITE === $attribute && $subject === $object);
@@ -182,7 +184,7 @@ class PermissionControllerTest extends TestCase
 
     public function testSetAceIsDeniedWhenTheVotersDeny(): void
     {
-        $this->em->method('find')->willReturn(new ObjectMock('pub-42', 'someone-else'));
+        $this->em->method('find')->willReturn(new ObjectMock(self::OBJECT_ID, 'someone-else'));
         $this->authorizationChecker->method('isGranted')->willReturn(false);
         $this->permissionManager->expects($this->never())->method('updateOrCreateAce');
 
@@ -212,12 +214,13 @@ class PermissionControllerTest extends TestCase
         $this->controller->setAce($this->jsonRequest('PUT', $this->userAceBody()), $this->serializer);
     }
 
-    public function testSetAceIsDeniedWithoutObjectTypeForNonAdmins(): void
+    public function testSetAceRequiresAnObjectType(): void
     {
-        $this->authorizationChecker->method('isGranted')->willReturnCallback(fn (mixed $attribute): bool => 'ROLE_ADMIN' !== $attribute);
+        $this->grantOnly('ROLE_ADMIN');
         $this->permissionManager->expects($this->never())->method('updateOrCreateAce');
 
-        $this->expectException(AccessDeniedHttpException::class);
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('Missing objectType');
 
         $this->controller->setAce($this->jsonRequest('PUT', [
             'userType' => 'user',
@@ -277,7 +280,8 @@ class PermissionControllerTest extends TestCase
     {
         $this->authorizationChecker->method('isGranted')->willReturn(false);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('Invalid objectType');
 
         $this->controller->setAce($this->jsonRequest('PUT', [
             'userType' => 'user',
@@ -286,6 +290,69 @@ class PermissionControllerTest extends TestCase
             'objectId' => 'a-1',
             'mask' => PermissionInterface::VIEW,
         ]), $this->serializer);
+    }
+
+    #[DataProvider('invalidAceBodyProvider')]
+    public function testSetAceRejectsAnInvalidBody(array $body, string $message): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+        $this->permissionManager->expects($this->never())->method('updateOrCreateAce');
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage($message);
+
+        $this->controller->setAce($this->jsonRequest('PUT', array_merge($this->userAceBody(), $body)), $this->serializer);
+    }
+
+    public static function invalidAceBodyProvider(): iterable
+    {
+        yield 'missing userType' => [['userType' => null], 'Invalid userType'];
+        yield 'unknown userType' => [['userType' => 'robot'], 'Invalid userType'];
+        yield 'missing userId' => [['userId' => null], 'Invalid userId'];
+        yield 'empty userId' => [['userId' => ''], 'Invalid userId'];
+        yield 'non-string userId' => [['userId' => 42], 'Invalid userId'];
+        yield 'too long userId' => [['userId' => str_repeat('u', 37)], 'Invalid userId'];
+        yield 'non-string objectType' => [['objectType' => ['pub']], 'Invalid objectType'];
+        yield 'non-UUID objectId' => [['objectId' => 'pub-42'], 'Invalid objectId'];
+        yield 'non-string objectId' => [['objectId' => 42], 'Invalid objectId'];
+        yield 'negative mask' => [['mask' => -1], 'Invalid mask'];
+        yield 'too large mask' => [['mask' => 0x80000000], 'Invalid mask'];
+        yield 'non-numeric mask' => [['mask' => 'all'], 'Invalid mask'];
+        yield 'non-object metadata' => [['metadata' => 'shared'], 'Invalid metadata'];
+    }
+
+    public function testSetAceAcceptsANumericStringMask(): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+
+        $this->permissionManager
+            ->expects($this->once())
+            ->method('updateOrCreateAce')
+            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', self::OBJECT_ID, 7, null)
+            ->willReturn($this->createAce());
+
+        $this->controller->setAce($this->jsonRequest('PUT', array_merge($this->userAceBody(), ['mask' => '7'])), $this->serializer);
+    }
+
+    public function testSetAceValidatesTheBodyBeforeTheAuthorization(): void
+    {
+        $this->authorizationChecker->method('isGranted')->willReturn(false);
+        $this->em->expects($this->never())->method('find');
+
+        $this->expectException(BadRequestHttpException::class);
+
+        $this->controller->setAce($this->jsonRequest('PUT', array_merge($this->userAceBody(), ['objectId' => 'pub-42'])), $this->serializer);
+    }
+
+    public function testDeleteAceRejectsAnInvalidUserType(): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+        $this->permissionManager->expects($this->never())->method('deleteAce');
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('Invalid userType');
+
+        $this->controller->deleteAce($this->jsonRequest('DELETE', array_merge($this->userAceBody(), ['userType' => 'robot'])));
     }
 
     public function testInvalidJsonBodyIsRejected(): void
@@ -307,13 +374,13 @@ class PermissionControllerTest extends TestCase
         $this->permissionManager
             ->expects($this->once())
             ->method('deleteAce')
-            ->with(AccessControlEntryInterface::TYPE_GROUP_VALUE, 'g-1', 'pub', 'pub-42');
+            ->with(AccessControlEntryInterface::TYPE_GROUP_VALUE, 'g-1', 'pub', self::OBJECT_ID);
 
         $response = $this->controller->deleteAce($this->jsonRequest('DELETE', [
             'userType' => 'group',
             'userId' => 'g-1',
             'objectType' => 'pub',
-            'objectId' => 'pub-42',
+            'objectId' => self::OBJECT_ID,
         ]));
 
         $this->assertInstanceOf(JsonResponse::class, $response);
@@ -339,7 +406,7 @@ class PermissionControllerTest extends TestCase
 
     public function testDeleteAceIsDeniedForNonOwners(): void
     {
-        $this->em->method('find')->willReturn(new ObjectMock('pub-42', 'someone-else'));
+        $this->em->method('find')->willReturn(new ObjectMock(self::OBJECT_ID, 'someone-else'));
         $this->authorizationChecker->method('isGranted')->willReturn(false);
         $this->permissionManager->expects($this->never())->method('deleteAce');
 
@@ -358,12 +425,12 @@ class PermissionControllerTest extends TestCase
             ->method('findAcesByParams')
             ->with([
                 'objectType' => 'pub',
-                'objectId' => 'pub-42',
+                'objectId' => self::OBJECT_ID,
             ])
             ->willReturn([$this->createAce(), $this->createAce()]);
 
         $response = $this->controller->indexAces(
-            Request::create('/permissions/aces', 'GET', ['objectType' => 'pub', 'objectId' => 'pub-42']),
+            Request::create('/permissions/aces', 'GET', ['objectType' => 'pub', 'objectId' => self::OBJECT_ID]),
             $repository,
             $this->serializer,
         );
@@ -432,7 +499,7 @@ class PermissionControllerTest extends TestCase
             ->method('findAcesByParams')
             ->with([
                 'objectType' => 'pub',
-                'objectId' => 'pub-42',
+                'objectId' => self::OBJECT_ID,
                 'userId' => 'u-1',
                 'userIdWildcard' => '1',
                 'objectIdWildcard' => '1',
@@ -442,7 +509,7 @@ class PermissionControllerTest extends TestCase
         $this->controller->indexAces(
             Request::create('/permissions/aces', 'GET', [
                 'objectType' => 'pub',
-                'objectId' => 'pub-42',
+                'objectId' => self::OBJECT_ID,
                 'userId' => 'u-1',
                 'userIdWildcard' => '1',
                 'objectIdWildcard' => '1',
@@ -470,10 +537,54 @@ class PermissionControllerTest extends TestCase
         );
     }
 
+    #[DataProvider('invalidIndexQueryProvider')]
+    public function testIndexAcesRejectsAnInvalidObject(array $query, string $message): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository->expects($this->never())->method('findAcesByParams');
+
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage($message);
+
+        $this->controller->indexAces(Request::create('/permissions/aces', 'GET', $query), $repository, $this->serializer);
+    }
+
+    public static function invalidIndexQueryProvider(): iterable
+    {
+        yield 'unknown objectType' => [['objectType' => 'asset'], 'Invalid objectType'];
+        yield 'non-UUID objectId' => [['objectType' => 'pub', 'objectId' => 'pub-42'], 'Invalid objectId'];
+    }
+
+    public function testIndexAcesWithANullObjectIdChecksReadAccessOnTheType(): void
+    {
+        $this->em->expects($this->never())->method('find');
+        $this->authorizationChecker
+            ->method('isGranted')
+            ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_READ === $attribute && $subject instanceof ObjectTypeSubject);
+
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository
+            ->expects($this->once())
+            ->method('findAcesByParams')
+            ->with([
+                'objectType' => 'pub',
+                'objectId' => null,
+            ])
+            ->willReturn([]);
+
+        $this->controller->indexAces(
+            Request::create('/permissions/aces', 'GET', ['objectType' => 'pub', 'objectId' => 'null']),
+            $repository,
+            $this->serializer,
+        );
+    }
+
     public function testIndexAcesChecksReadAccessOnTheObject(): void
     {
-        $object = new ObjectMock('pub-42', 'u-1');
-        $this->em->method('find')->with(ObjectMock::class, 'pub-42')->willReturn($object);
+        $object = new ObjectMock(self::OBJECT_ID, 'u-1');
+        $this->em->method('find')->with(ObjectMock::class, self::OBJECT_ID)->willReturn($object);
         $this->authorizationChecker
             ->method('isGranted')
             ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_READ === $attribute && $subject === $object);
@@ -482,7 +593,7 @@ class PermissionControllerTest extends TestCase
         $repository->expects($this->once())->method('findAcesByParams')->willReturn([]);
 
         $this->controller->indexAces(
-            Request::create('/permissions/aces', 'GET', ['objectType' => 'pub', 'objectId' => 'pub-42']),
+            Request::create('/permissions/aces', 'GET', ['objectType' => 'pub', 'objectId' => self::OBJECT_ID]),
             $repository,
             $this->serializer,
         );
@@ -490,7 +601,7 @@ class PermissionControllerTest extends TestCase
 
     public function testIndexAcesIsDeniedWithoutReadAccess(): void
     {
-        $this->em->method('find')->willReturn(new ObjectMock('pub-42', 'someone-else'));
+        $this->em->method('find')->willReturn(new ObjectMock(self::OBJECT_ID, 'someone-else'));
         $this->authorizationChecker->method('isGranted')->willReturn(false);
 
         $repository = $this->createMock(PermissionRepositoryInterface::class);
@@ -499,7 +610,7 @@ class PermissionControllerTest extends TestCase
         $this->expectException(AccessDeniedHttpException::class);
 
         $this->controller->indexAces(
-            Request::create('/permissions/aces', 'GET', ['objectType' => 'pub', 'objectId' => 'pub-42']),
+            Request::create('/permissions/aces', 'GET', ['objectType' => 'pub', 'objectId' => self::OBJECT_ID]),
             $repository,
             $this->serializer,
         );
@@ -507,8 +618,8 @@ class PermissionControllerTest extends TestCase
 
     public function testIndexAcesIgnoresAJsonBodyOnGet(): void
     {
-        $object = new ObjectMock('pub-42', 'u-1');
-        $this->em->method('find')->with(ObjectMock::class, 'pub-42')->willReturn($object);
+        $object = new ObjectMock(self::OBJECT_ID, 'u-1');
+        $this->em->method('find')->with(ObjectMock::class, self::OBJECT_ID)->willReturn($object);
         $this->authorizationChecker
             ->method('isGranted')
             ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_READ === $attribute && $subject === $object);
@@ -526,7 +637,7 @@ class PermissionControllerTest extends TestCase
                 [],
                 [],
                 ['CONTENT_TYPE' => 'application/json'],
-                json_encode(['objectType' => 'pub', 'objectId' => 'pub-42'], JSON_THROW_ON_ERROR),
+                json_encode(['objectType' => 'pub', 'objectId' => self::OBJECT_ID], JSON_THROW_ON_ERROR),
             ),
             $repository,
             $this->serializer,
@@ -535,8 +646,8 @@ class PermissionControllerTest extends TestCase
 
     public function testIndexAcesKeepsANonAdminOnTheAuthorizedObject(): void
     {
-        $object = new ObjectMock('pub-42', 'u-1');
-        $this->em->method('find')->with(ObjectMock::class, 'pub-42')->willReturn($object);
+        $object = new ObjectMock(self::OBJECT_ID, 'u-1');
+        $this->em->method('find')->with(ObjectMock::class, self::OBJECT_ID)->willReturn($object);
         $this->authorizationChecker
             ->method('isGranted')
             ->willReturnCallback(fn (mixed $attribute, mixed $subject = null): bool => SetPermissionVoter::ACL_READ === $attribute && $subject === $object);
@@ -547,7 +658,7 @@ class PermissionControllerTest extends TestCase
             ->method('findAcesByParams')
             ->with([
                 'objectType' => 'pub',
-                'objectId' => 'pub-42',
+                'objectId' => self::OBJECT_ID,
                 'userIdWildcard' => '1',
                 'objectIdWildcard' => '1',
             ])
@@ -556,7 +667,7 @@ class PermissionControllerTest extends TestCase
         $this->controller->indexAces(
             Request::create('/permissions/aces', 'GET', [
                 'objectType' => 'pub',
-                'objectId' => 'pub-42',
+                'objectId' => self::OBJECT_ID,
                 'userIdWildcard' => '1',
                 'objectIdWildcard' => '1',
             ]),
@@ -616,7 +727,7 @@ class PermissionControllerTest extends TestCase
             'userType' => 'user',
             'userId' => 'u-1',
             'objectType' => 'pub',
-            'objectId' => 'pub-42',
+            'objectId' => self::OBJECT_ID,
             'mask' => PermissionInterface::VIEW,
         ];
     }
@@ -626,7 +737,7 @@ class PermissionControllerTest extends TestCase
         $ace = new AccessControlEntry();
         $ace->setUserId('u-1');
         $ace->setObjectType('pub');
-        $ace->setObjectId('pub-42');
+        $ace->setObjectId(self::OBJECT_ID);
         $ace->setMask(PermissionInterface::VIEW | PermissionInterface::EDIT);
 
         return $ace;
