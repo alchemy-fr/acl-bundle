@@ -259,8 +259,9 @@ $groupIds = $this->permissionManager->getAllowedGroups($publication, PermissionI
 ```
 
 The manager caches the ACEs it loads per user and object for the lifetime of the request.
-Writing through the manager invalidates the relevant entry; call `resetCache()` if you
-change ACEs by other means (long-running workers, direct SQL...).
+Writing through the manager clears the whole cache, and the manager is reset between two
+requests or two Messenger messages (`kernel.reset`). Call `resetCache()` if you change
+ACEs by other means (direct SQL, another process...) during a request or a message.
 
 ## Managing ACEs from PHP
 
