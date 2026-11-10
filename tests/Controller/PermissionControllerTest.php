@@ -26,6 +26,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 class PermissionControllerTest extends TestCase
@@ -111,23 +112,34 @@ class PermissionControllerTest extends TestCase
         ]), $this->serializer);
     }
 
-    public function testSetAceAcceptsFormEncodedBodies(): void
+    public function testSetAceRejectsFormEncodedBodies(): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+        $this->permissionManager->expects($this->never())->method('updateOrCreateAce');
+
+        $this->expectException(UnsupportedMediaTypeHttpException::class);
+
+        $this->controller->setAce(Request::create('/permissions/ace', 'PUT', $this->userAceBody()), $this->serializer);
+    }
+
+    public function testDeleteAceRejectsFormEncodedBodies(): void
+    {
+        $this->grantOnly('ROLE_ADMIN');
+        $this->permissionManager->expects($this->never())->method('deleteAce');
+
+        $this->expectException(UnsupportedMediaTypeHttpException::class);
+
+        $this->controller->deleteAce(Request::create('/permissions/ace', 'DELETE', $this->userAceBody()));
+    }
+
+    public function testSetAceRejectsAJsonBodyWhichIsNotAnObject(): void
     {
         $this->grantOnly('ROLE_ADMIN');
 
-        $this->permissionManager
-            ->expects($this->once())
-            ->method('updateOrCreateAce')
-            ->with(AccessControlEntryInterface::TYPE_USER_VALUE, 'u-1', 'pub', 'pub-42', 7, null)
-            ->willReturn($this->createAce());
+        $this->expectException(BadRequestHttpException::class);
+        $this->expectExceptionMessage('The body must be a JSON object');
 
-        $request = Request::create('/permissions/ace', 'PUT', [
-            'userType' => 'user',
-            'userId' => 'u-1',
-            'objectType' => 'pub',
-            'objectId' => 'pub-42',
-            'mask' => '7',
-        ]);
+        $request = Request::create('/permissions/ace', 'PUT', [], [], [], ['CONTENT_TYPE' => 'application/json'], '"text"');
 
         $this->controller->setAce($request, $this->serializer);
     }

@@ -20,6 +20,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 class PermissionController extends AbstractController
@@ -157,8 +158,9 @@ class PermissionController extends AbstractController
             return $request->query->all();
         }
 
-        if ('json' !== $request->getContentTypeFormat() || empty($request->getContent())) {
-            return $request->request->all();
+        // A cross-site form can send a form-encoded body without a CORS preflight, a JSON one cannot
+        if ('json' !== $request->getContentTypeFormat()) {
+            throw new UnsupportedMediaTypeHttpException('The body must be JSON');
         }
 
         try {
@@ -167,6 +169,10 @@ class PermissionController extends AbstractController
             throw new BadRequestHttpException('Invalid JSON body: '.$e->getMessage(), $e);
         }
 
-        return is_array($data) ? $data : [];
+        if (!is_array($data)) {
+            throw new BadRequestHttpException('The body must be a JSON object');
+        }
+
+        return $data;
     }
 }

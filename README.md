@@ -390,7 +390,9 @@ curl "{HOST}/permissions/aces?userType=user&userId=u-42&objectType=publication&o
 
 ### `PUT /permissions/ace`
 
-Creates or replaces an ACE. The body can be JSON or form-encoded.
+Creates or replaces an ACE. The body must be JSON (`Content-Type: application/json`): a
+form-encoded body gets a `415`, since a cross-site form could send one without a CORS
+preflight.
 
 ```json
 {
