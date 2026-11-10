@@ -43,11 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const boxes = [...row.querySelectorAll('[data-acl-permission]')];
         const checked = boxes.filter(box => box.checked).length;
         const toggle = row.querySelector('[data-acl-all]');
-        if (checked === boxes.length) {
-            toggle.checked = true;
-        } else if (0 === checked) {
-            toggle.checked = false;
-        }
+        toggle.checked = checked === boxes.length;
+        toggle.indeterminate = checked > 0 && checked < boxes.length;
     }
 
     // The mask keeps the bits of the permissions which are not shown
