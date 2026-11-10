@@ -8,9 +8,12 @@ use Alchemy\AclBundle\Doctrine\Listener\AclObjectDeleteListener;
 use Alchemy\AclBundle\Mapping\ObjectMapping;
 use Alchemy\AclBundle\Repository\PermissionRepositoryInterface;
 use Alchemy\AclBundle\Tests\Mock\ChildObjectMock;
+use Alchemy\AclBundle\Tests\Mock\GeneratedIdObjectMock;
 use Alchemy\AclBundle\Tests\Mock\ObjectMock;
+use Alchemy\AclBundle\Tests\Mock\UnmappedObjectMock;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\PostRemoveEventArgs;
+use Doctrine\ORM\Event\PreRemoveEventArgs;
 use PHPUnit\Framework\TestCase;
 
 class AclObjectDeleteListenerTest extends TestCase
@@ -28,7 +31,38 @@ class AclObjectDeleteListenerTest extends TestCase
 
         $listener = new AclObjectDeleteListener(new ObjectMapping(['pub' => ObjectMock::class]), $repository);
 
-        $listener->postRemove($this->createEvent(new ChildObjectMock('42')));
+        $this->remove($listener, new ChildObjectMock('42'));
+    }
+
+    public function testTheIdIsReadBeforeDoctrineResetsIt(): void
+    {
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository
+            ->expects($this->once())
+            ->method('deleteAcesByParams')
+            ->with([
+                'objectType' => 'pub',
+                'objectId' => '42',
+            ]);
+
+        $listener = new AclObjectDeleteListener(new ObjectMapping(['pub' => GeneratedIdObjectMock::class]), $repository);
+
+        $object = new GeneratedIdObjectMock('42');
+        $listener->preRemove(new PreRemoveEventArgs($object, $this->createMock(EntityManagerInterface::class)));
+        $object->id = null;
+        $listener->postRemove(new PostRemoveEventArgs($object, $this->createMock(EntityManagerInterface::class)));
+    }
+
+    public function testAcesAreDeletedOnlyOnce(): void
+    {
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository->expects($this->once())->method('deleteAcesByParams');
+
+        $listener = new AclObjectDeleteListener(new ObjectMapping(['pub' => ObjectMock::class]), $repository);
+
+        $object = new ObjectMock('42');
+        $this->remove($listener, $object);
+        $listener->postRemove(new PostRemoveEventArgs($object, $this->createMock(EntityManagerInterface::class)));
     }
 
     public function testNonAclObjectsAreIgnored(): void
@@ -38,11 +72,24 @@ class AclObjectDeleteListenerTest extends TestCase
 
         $listener = new AclObjectDeleteListener(new ObjectMapping(['pub' => ObjectMock::class]), $repository);
 
-        $listener->postRemove($this->createEvent(new \stdClass()));
+        $this->remove($listener, new \stdClass());
     }
 
-    private function createEvent(object $object): PostRemoveEventArgs
+    public function testUnmappedAclObjectsAreIgnored(): void
     {
-        return new PostRemoveEventArgs($object, $this->createMock(EntityManagerInterface::class));
+        $repository = $this->createMock(PermissionRepositoryInterface::class);
+        $repository->expects($this->never())->method('deleteAcesByParams');
+
+        $listener = new AclObjectDeleteListener(new ObjectMapping(['pub' => ObjectMock::class]), $repository);
+
+        $this->remove($listener, new UnmappedObjectMock());
+    }
+
+    private function remove(AclObjectDeleteListener $listener, object $object): void
+    {
+        $em = $this->createMock(EntityManagerInterface::class);
+
+        $listener->preRemove(new PreRemoveEventArgs($object, $em));
+        $listener->postRemove(new PostRemoveEventArgs($object, $em));
     }
 }
